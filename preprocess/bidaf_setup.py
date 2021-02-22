@@ -356,11 +356,11 @@ def pre_process(args, nlp):
         char_counter, 'char', emb_file=None, vec_size=args.char_dim)
 
     # Process dev and test sets
-    dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter)
+    dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter, nlp)
     build_features(args, train_examples, "train", args.train_record_file, word2idx_dict, char2idx_dict)
     dev_meta = build_features(args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict)
     if args.include_test_examples:
-        test_examples, test_eval = process_file(args.test_file, "test", word_counter, char_counter)
+        test_examples, test_eval = process_file(args.test_file, "test", word_counter, char_counter, nlp)
         save(args.test_eval_file, test_eval, message="test eval")
         test_meta = build_features(args, test_examples, "test",
                                    args.test_record_file, word2idx_dict, char2idx_dict, is_test=True)
