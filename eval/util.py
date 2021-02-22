@@ -1,3 +1,9 @@
+"""Write submission to file in csv format
+
+Author:
+    Chris Chute (chute@stanford.edu)
+"""
+
 import csv
 
 
