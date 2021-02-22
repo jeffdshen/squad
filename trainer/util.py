@@ -195,33 +195,6 @@ def visualize(tbx, pred_dict, eval_path, step, split, num_visuals):
                      global_step=step)
 
 
-def save_preds(preds, save_dir, file_name='predictions.csv'):
-    """Save predictions `preds` to a CSV file named `file_name` in `save_dir`.
-
-    Args:
-        preds (list): List of predictions each of the form (id, start, end),
-            where id is an example ID, and start/end are indices in the context.
-        save_dir (str): Directory in which to save the predictions file.
-        file_name (str): File name for the CSV file.
-
-    Returns:
-        save_path (str): Path where CSV file was saved.
-    """
-    # Validate format
-    if (not isinstance(preds, list)
-            or any(not isinstance(p, tuple) or len(p) != 3 for p in preds)):
-        raise ValueError('preds must be a list of tuples (id, start, end)')
-
-    # Make sure predictions are sorted by ID
-    preds = sorted(preds, key=lambda p: p[0])
-
-    # Save to a CSV file
-    save_path = os.path.join(save_dir, file_name)
-    np.savetxt(save_path, np.array(preds), delimiter=',', fmt='%d')
-
-    return save_path
-
-
 def get_save_dir(base_dir, name, training, id_max=100):
     """Get a unique save directory by appending the smallest positive integer
     `id < id_max` that is not already taken (i.e., no dir exists with that id).
