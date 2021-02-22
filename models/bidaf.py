@@ -1,10 +1,10 @@
-"""Top-level model classes.
+"""Top-level model class for BiDAF.
 
 Author:
     Chris Chute (chute@stanford.edu)
 """
 
-import layers
+import models.bidaf_layers as layers
 import torch
 import torch.nn as nn
 
