@@ -20,10 +20,10 @@ def main():
     subparsers = parser.add_subparsers()
     bidaf = subparsers.add_parser('bidaf')
     bidaf_setup.add_args(bidaf)
-    bidaf.set_defaults(func=bidaf_setup.setup)
+    bidaf.set_defaults(setup=bidaf_setup.setup)
 
     args = parser.parse_args()
-    args.func(args)
+    args.setup(args)
 
 
 if __name__ == '__main__':

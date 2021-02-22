@@ -29,7 +29,9 @@ def main(args):
     if not args.load_path:
         raise argparse.ArgumentError('Missing required argument --load_path')
 
-    args.test(args)
+    test = args.test
+    del args.test
+    test(args)
 
 
 if __name__ == '__main__':

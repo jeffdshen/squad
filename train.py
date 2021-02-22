@@ -25,7 +25,9 @@ def main():
     else:
         raise ValueError(f'Unrecognized metric name: "{args.metric_name}"')
 
-    args.train(args)
+    train = args.train
+    del args.train
+    train(args)
 
 if __name__ == '__main__':
     main()
