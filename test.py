@@ -15,11 +15,12 @@ import argparse
 
 from trainer import bidaf_trainer
 
+
 def main(args):
-    parser = argparse.ArgumentParser('Train a model on SQuAD')
+    parser = argparse.ArgumentParser("Train a model on SQuAD")
     subparsers = parser.add_subparsers()
 
-    bidaf = subparsers.add_parser('bidaf')
+    bidaf = subparsers.add_parser("bidaf")
     bidaf_trainer.add_test_args(bidaf)
     bidaf.set_defaults(test=bidaf_trainer.test)
 
@@ -27,12 +28,12 @@ def main(args):
 
     # Require load_path for test.py
     if not args.load_path:
-        raise argparse.ArgumentError('Missing required argument --load_path')
+        raise argparse.ArgumentError("Missing required argument --load_path")
 
     test = args.test
     del args.test
     test(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

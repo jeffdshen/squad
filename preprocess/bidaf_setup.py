@@ -33,41 +33,42 @@ def download_url(url, output_path, show_progress=True):
 
     if show_progress:
         # Download with a progress bar
-        with DownloadProgressBar(unit='B', unit_scale=True,
-                                 miniters=1, desc=url.split('/')[-1]) as t:
-            urllib.request.urlretrieve(url,
-                                       filename=output_path,
-                                       reporthook=t.update_to)
+        with DownloadProgressBar(
+            unit="B", unit_scale=True, miniters=1, desc=url.split("/")[-1]
+        ) as t:
+            urllib.request.urlretrieve(
+                url, filename=output_path, reporthook=t.update_to
+            )
     else:
         # Simple download with no progress bar
         urllib.request.urlretrieve(url, output_path)
 
 
 def url_to_data_path(url):
-    return os.path.join('./data/', url.split('/')[-1])
+    return os.path.join("./data/", url.split("/")[-1])
 
 
 def download(args):
     downloads = [
         # Can add other downloads here (e.g., other word vectors)
-        ('GloVe word vectors', args.glove_url),
+        ("GloVe word vectors", args.glove_url),
     ]
 
     for name, url in downloads:
         output_path = url_to_data_path(url)
         if not os.path.exists(output_path):
-            print(f'Downloading {name}...')
+            print(f"Downloading {name}...")
             download_url(url, output_path)
 
-        if os.path.exists(output_path) and output_path.endswith('.zip'):
-            extracted_path = output_path.replace('.zip', '')
+        if os.path.exists(output_path) and output_path.endswith(".zip"):
+            extracted_path = output_path.replace(".zip", "")
             if not os.path.exists(extracted_path):
-                print(f'Unzipping {name}...')
-                with ZipFile(output_path, 'r') as zip_fh:
+                print(f"Unzipping {name}...")
+                with ZipFile(output_path, "r") as zip_fh:
                     zip_fh.extractall(extracted_path)
 
-    print('Downloading spacy language model...')
-    run(['python', '-m', 'spacy', 'download', 'en'])
+    print("Downloading spacy language model...")
+    run(["python", "-m", "spacy", "download", "en"])
 
 
 def word_tokenize(nlp, sent):
@@ -97,8 +98,7 @@ def process_file(filename, data_type, word_counter, char_counter, nlp):
         source = json.load(fh)
         for article in tqdm(source["data"]):
             for para in article["paragraphs"]:
-                context = para["context"].replace(
-                    "''", '" ').replace("``", '" ')
+                context = para["context"].replace("''", '" ').replace("``", '" ')
                 context_tokens = word_tokenize(nlp, context)
                 context_chars = [list(token) for token in context_tokens]
                 spans = convert_idx(context, context_tokens)
@@ -108,8 +108,7 @@ def process_file(filename, data_type, word_counter, char_counter, nlp):
                         char_counter[char] += len(para["qas"])
                 for qa in para["qas"]:
                     total += 1
-                    ques = qa["question"].replace(
-                        "''", '" ').replace("``", '" ')
+                    ques = qa["question"].replace("''", '" ').replace("``", '" ')
                     ques_tokens = word_tokenize(nlp, ques)
                     ques_chars = [list(token) for token in ques_tokens]
                     for token in ques_tokens:
@@ -120,7 +119,7 @@ def process_file(filename, data_type, word_counter, char_counter, nlp):
                     answer_texts = []
                     for answer in qa["answers"]:
                         answer_text = answer["text"]
-                        answer_start = answer['answer_start']
+                        answer_start = answer["answer_start"]
                         answer_end = answer_start + len(answer_text)
                         answer_texts.append(answer_text)
                         answer_span = []
@@ -130,24 +129,30 @@ def process_file(filename, data_type, word_counter, char_counter, nlp):
                         y1, y2 = answer_span[0], answer_span[-1]
                         y1s.append(y1)
                         y2s.append(y2)
-                    example = {"context_tokens": context_tokens,
-                               "context_chars": context_chars,
-                               "ques_tokens": ques_tokens,
-                               "ques_chars": ques_chars,
-                               "y1s": y1s,
-                               "y2s": y2s,
-                               "id": total}
+                    example = {
+                        "context_tokens": context_tokens,
+                        "context_chars": context_chars,
+                        "ques_tokens": ques_tokens,
+                        "ques_chars": ques_chars,
+                        "y1s": y1s,
+                        "y2s": y2s,
+                        "id": total,
+                    }
                     examples.append(example)
-                    eval_examples[str(total)] = {"context": context,
-                                                 "question": ques,
-                                                 "spans": spans,
-                                                 "answers": answer_texts,
-                                                 "uuid": qa["id"]}
+                    eval_examples[str(total)] = {
+                        "context": context,
+                        "question": ques,
+                        "spans": spans,
+                        "answers": answer_texts,
+                        "uuid": qa["id"],
+                    }
         print(f"{len(examples)} questions in total")
     return examples, eval_examples
 
 
-def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None):
+def get_embedding(
+    counter, data_type, limit=-1, emb_file=None, vec_size=None, num_vectors=None
+):
     print(f"Pre-processing {data_type} vectors...")
     embedding_dict = {}
     filtered_elements = [k for k, v in counter.items() if v > limit]
@@ -160,32 +165,38 @@ def get_embedding(counter, data_type, limit=-1, emb_file=None, vec_size=None, nu
                 vector = list(map(float, array[-vec_size:]))
                 if word in counter and counter[word] > limit:
                     embedding_dict[word] = vector
-        print(f"{len(embedding_dict)} / {len(filtered_elements)} tokens have corresponding {data_type} embedding vector")
+        print(
+            f"{len(embedding_dict)} / {len(filtered_elements)} tokens have corresponding {data_type} embedding vector"
+        )
     else:
         assert vec_size is not None
         for token in filtered_elements:
-            embedding_dict[token] = [np.random.normal(
-                scale=0.1) for _ in range(vec_size)]
-        print(f"{len(filtered_elements)} tokens have corresponding {data_type} embedding vector")
+            embedding_dict[token] = [
+                np.random.normal(scale=0.1) for _ in range(vec_size)
+            ]
+        print(
+            f"{len(filtered_elements)} tokens have corresponding {data_type} embedding vector"
+        )
 
     NULL = "--NULL--"
     OOV = "--OOV--"
     token2idx_dict = {token: idx for idx, token in enumerate(embedding_dict.keys(), 2)}
     token2idx_dict[NULL] = 0
     token2idx_dict[OOV] = 1
-    embedding_dict[NULL] = [0. for _ in range(vec_size)]
-    embedding_dict[OOV] = [0. for _ in range(vec_size)]
-    idx2emb_dict = {idx: embedding_dict[token]
-                    for token, idx in token2idx_dict.items()}
+    embedding_dict[NULL] = [0.0 for _ in range(vec_size)]
+    embedding_dict[OOV] = [0.0 for _ in range(vec_size)]
+    idx2emb_dict = {idx: embedding_dict[token] for token, idx in token2idx_dict.items()}
     emb_mat = [idx2emb_dict[idx] for idx in range(len(idx2emb_dict))]
     return emb_mat, token2idx_dict
 
 
 def is_answerable(example):
-    return len(example['y2s']) > 0 and len(example['y1s']) > 0
+    return len(example["y2s"]) > 0 and len(example["y1s"]) > 0
 
 
-def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_dict, is_test=False):
+def build_features(
+    args, examples, data_type, out_file, word2idx_dict, char2idx_dict, is_test=False
+):
     para_limit = args.test_para_limit if is_test else args.para_limit
     ques_limit = args.test_ques_limit if is_test else args.ques_limit
     ans_limit = args.ans_limit
@@ -195,10 +206,11 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
         if is_test_:
             drop = False
         else:
-            drop = len(ex["context_tokens"]) > para_limit or \
-                   len(ex["ques_tokens"]) > ques_limit or \
-                   (is_answerable(ex) and
-                    ex["y2s"][0] - ex["y1s"][0] > ans_limit)
+            drop = (
+                len(ex["context_tokens"]) > para_limit
+                or len(ex["ques_tokens"]) > ques_limit
+                or (is_answerable(ex) and ex["y2s"][0] - ex["y1s"][0] > ans_limit)
+            )
 
         return drop
 
@@ -268,14 +280,16 @@ def build_features(args, examples, data_type, out_file, word2idx_dict, char2idx_
         y2s.append(end)
         ids.append(example["id"])
 
-    np.savez(out_file,
-             context_idxs=np.array(context_idxs),
-             context_char_idxs=np.array(context_char_idxs),
-             ques_idxs=np.array(ques_idxs),
-             ques_char_idxs=np.array(ques_char_idxs),
-             y1s=np.array(y1s),
-             y2s=np.array(y2s),
-             ids=np.array(ids))
+    np.savez(
+        out_file,
+        context_idxs=np.array(context_idxs),
+        context_char_idxs=np.array(context_char_idxs),
+        ques_idxs=np.array(ques_idxs),
+        ques_char_idxs=np.array(ques_char_idxs),
+        y1s=np.array(y1s),
+        y2s=np.array(y2s),
+        ids=np.array(ids),
+    )
     print(f"Built {total} / {total_} instances of features in total")
     meta["total"] = total
     return meta
@@ -291,21 +305,49 @@ def save(filename, obj, message=None):
 def pre_process(args, nlp):
     # Process training set and use it to decide on the word/character vocabularies
     word_counter, char_counter = Counter(), Counter()
-    train_examples, train_eval = process_file(args.train_file, "train", word_counter, char_counter, nlp)
+    train_examples, train_eval = process_file(
+        args.train_file, "train", word_counter, char_counter, nlp
+    )
     word_emb_mat, word2idx_dict = get_embedding(
-        word_counter, 'word', emb_file=args.glove_file, vec_size=args.glove_dim, num_vectors=args.glove_num_vecs)
+        word_counter,
+        "word",
+        emb_file=args.glove_file,
+        vec_size=args.glove_dim,
+        num_vectors=args.glove_num_vecs,
+    )
     char_emb_mat, char2idx_dict = get_embedding(
-        char_counter, 'char', emb_file=None, vec_size=args.char_dim)
+        char_counter, "char", emb_file=None, vec_size=args.char_dim
+    )
 
     # Process dev and test sets
-    dev_examples, dev_eval = process_file(args.dev_file, "dev", word_counter, char_counter, nlp)
-    build_features(args, train_examples, "train", args.train_record_file, word2idx_dict, char2idx_dict)
-    dev_meta = build_features(args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict)
+    dev_examples, dev_eval = process_file(
+        args.dev_file, "dev", word_counter, char_counter, nlp
+    )
+    build_features(
+        args,
+        train_examples,
+        "train",
+        args.train_record_file,
+        word2idx_dict,
+        char2idx_dict,
+    )
+    dev_meta = build_features(
+        args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict
+    )
     if args.include_test_examples:
-        test_examples, test_eval = process_file(args.test_file, "test", word_counter, char_counter, nlp)
+        test_examples, test_eval = process_file(
+            args.test_file, "test", word_counter, char_counter, nlp
+        )
         save(args.test_eval_file, test_eval, message="test eval")
-        test_meta = build_features(args, test_examples, "test",
-                                   args.test_record_file, word2idx_dict, char2idx_dict, is_test=True)
+        test_meta = build_features(
+            args,
+            test_examples,
+            "test",
+            args.test_record_file,
+            word2idx_dict,
+            char2idx_dict,
+            is_test=True,
+        )
         save(args.test_meta_file, test_meta, message="test meta")
 
     save(args.word_emb_file, word_emb_mat, message="word embedding")
@@ -329,110 +371,103 @@ def setup(args):
     args.dev_file = url_to_data_path(args.dev_url)
     if args.include_test_examples:
         args.test_file = url_to_data_path(args.test_url)
-    glove_dir = url_to_data_path(args.glove_url.replace('.zip', ''))
-    glove_ext = f'.txt' if glove_dir.endswith('d') else f'.{args.glove_dim}d.txt'
+    glove_dir = url_to_data_path(args.glove_url.replace(".zip", ""))
+    glove_ext = f".txt" if glove_dir.endswith("d") else f".{args.glove_dim}d.txt"
     args.glove_file = os.path.join(glove_dir, os.path.basename(glove_dir) + glove_ext)
     pre_process(args, nlp)
 
 
 def add_common_args(parser):
     """Add arguments common to all 3 scripts: setup.py, train.py, test.py"""
-    parser.add_argument('--train_record_file',
-                        type=str,
-                        default='./data/train.npz')
-    parser.add_argument('--dev_record_file',
-                        type=str,
-                        default='./data/dev.npz')
-    parser.add_argument('--test_record_file',
-                        type=str,
-                        default='./data/test.npz')
-    parser.add_argument('--word_emb_file',
-                        type=str,
-                        default='./data/word_emb.json')
-    parser.add_argument('--char_emb_file',
-                        type=str,
-                        default='./data/char_emb.json')
-    parser.add_argument('--train_eval_file',
-                        type=str,
-                        default='./data/train_eval.json')
-    parser.add_argument('--dev_eval_file',
-                        type=str,
-                        default='./data/dev_eval.json')
-    parser.add_argument('--test_eval_file',
-                        type=str,
-                        default='./data/test_eval.json')
+    parser.add_argument("--train_record_file", type=str, default="./data/train.npz")
+    parser.add_argument("--dev_record_file", type=str, default="./data/dev.npz")
+    parser.add_argument("--test_record_file", type=str, default="./data/test.npz")
+    parser.add_argument("--word_emb_file", type=str, default="./data/word_emb.json")
+    parser.add_argument("--char_emb_file", type=str, default="./data/char_emb.json")
+    parser.add_argument("--train_eval_file", type=str, default="./data/train_eval.json")
+    parser.add_argument("--dev_eval_file", type=str, default="./data/dev_eval.json")
+    parser.add_argument("--test_eval_file", type=str, default="./data/test_eval.json")
 
 
 def add_args(parser):
     """Get arguments needed in setup.py."""
     add_common_args(parser)
 
-    parser.add_argument('--train_url',
-                        type=str,
-                        default='https://github.com/chrischute/squad/data/train-v2.0.json')
-    parser.add_argument('--dev_url',
-                        type=str,
-                        default='https://github.com/chrischute/squad/data/dev-v2.0.json')
-    parser.add_argument('--test_url',
-                        type=str,
-                        default='https://github.com/chrischute/squad/data/test-v2.0.json')
-    parser.add_argument('--glove_url',
-                        type=str,
-                        default='http://nlp.stanford.edu/data/glove.840B.300d.zip')
-    parser.add_argument('--dev_meta_file',
-                        type=str,
-                        default='./data/dev_meta.json')
-    parser.add_argument('--test_meta_file',
-                        type=str,
-                        default='./data/test_meta.json')
-    parser.add_argument('--word2idx_file',
-                        type=str,
-                        default='./data/word2idx.json')
-    parser.add_argument('--char2idx_file',
-                        type=str,
-                        default='./data/char2idx.json')
-    parser.add_argument('--answer_file',
-                        type=str,
-                        default='./data/answer.json')
-    parser.add_argument('--para_limit',
-                        type=int,
-                        default=400,
-                        help='Max number of words in a paragraph')
-    parser.add_argument('--ques_limit',
-                        type=int,
-                        default=50,
-                        help='Max number of words to keep from a question')
-    parser.add_argument('--test_para_limit',
-                        type=int,
-                        default=1000,
-                        help='Max number of words in a paragraph at test time')
-    parser.add_argument('--test_ques_limit',
-                        type=int,
-                        default=100,
-                        help='Max number of words in a question at test time')
-    parser.add_argument('--char_dim',
-                        type=int,
-                        default=64,
-                        help='Size of char vectors (char-level embeddings)')
-    parser.add_argument('--glove_dim',
-                        type=int,
-                        default=300,
-                        help='Size of GloVe word vectors to use')
-    parser.add_argument('--glove_num_vecs',
-                        type=int,
-                        default=2196017,
-                        help='Number of GloVe vectors')
-    parser.add_argument('--ans_limit',
-                        type=int,
-                        default=30,
-                        help='Max number of words in a training example answer')
-    parser.add_argument('--char_limit',
-                        type=int,
-                        default=16,
-                        help='Max number of chars to keep from a word')
-    parser.add_argument('--include_test_examples',
-                        type=lambda s: s.lower().startswith('t'),
-                        default=True,
-                        help='Process examples from the test set')
+    parser.add_argument(
+        "--train_url",
+        type=str,
+        default="https://github.com/chrischute/squad/data/train-v2.0.json",
+    )
+    parser.add_argument(
+        "--dev_url",
+        type=str,
+        default="https://github.com/chrischute/squad/data/dev-v2.0.json",
+    )
+    parser.add_argument(
+        "--test_url",
+        type=str,
+        default="https://github.com/chrischute/squad/data/test-v2.0.json",
+    )
+    parser.add_argument(
+        "--glove_url",
+        type=str,
+        default="http://nlp.stanford.edu/data/glove.840B.300d.zip",
+    )
+    parser.add_argument("--dev_meta_file", type=str, default="./data/dev_meta.json")
+    parser.add_argument("--test_meta_file", type=str, default="./data/test_meta.json")
+    parser.add_argument("--word2idx_file", type=str, default="./data/word2idx.json")
+    parser.add_argument("--char2idx_file", type=str, default="./data/char2idx.json")
+    parser.add_argument("--answer_file", type=str, default="./data/answer.json")
+    parser.add_argument(
+        "--para_limit", type=int, default=400, help="Max number of words in a paragraph"
+    )
+    parser.add_argument(
+        "--ques_limit",
+        type=int,
+        default=50,
+        help="Max number of words to keep from a question",
+    )
+    parser.add_argument(
+        "--test_para_limit",
+        type=int,
+        default=1000,
+        help="Max number of words in a paragraph at test time",
+    )
+    parser.add_argument(
+        "--test_ques_limit",
+        type=int,
+        default=100,
+        help="Max number of words in a question at test time",
+    )
+    parser.add_argument(
+        "--char_dim",
+        type=int,
+        default=64,
+        help="Size of char vectors (char-level embeddings)",
+    )
+    parser.add_argument(
+        "--glove_dim", type=int, default=300, help="Size of GloVe word vectors to use"
+    )
+    parser.add_argument(
+        "--glove_num_vecs", type=int, default=2196017, help="Number of GloVe vectors"
+    )
+    parser.add_argument(
+        "--ans_limit",
+        type=int,
+        default=30,
+        help="Max number of words in a training example answer",
+    )
+    parser.add_argument(
+        "--char_limit",
+        type=int,
+        default=16,
+        help="Max number of chars to keep from a word",
+    )
+    parser.add_argument(
+        "--include_test_examples",
+        type=lambda s: s.lower().startswith("t"),
+        default=True,
+        help="Process examples from the test set",
+    )
 
     return parser

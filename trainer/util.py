@@ -32,8 +32,10 @@ class CheckpointSaver:
             minimizes the metric.
         log (logging.Logger): Optional logger for printing information.
     """
-    def __init__(self, save_dir, max_checkpoints, metric_name,
-                 maximize_metric=False, log=None):
+
+    def __init__(
+        self, save_dir, max_checkpoints, metric_name, maximize_metric=False, log=None
+    ):
         super(CheckpointSaver, self).__init__()
 
         self.save_dir = save_dir
@@ -43,7 +45,9 @@ class CheckpointSaver:
         self.best_val = None
         self.ckpt_paths = queue.PriorityQueue()
         self.log = log
-        self._print(f"Saver will {'max' if maximize_metric else 'min'}imize {metric_name}...")
+        self._print(
+            f"Saver will {'max' if maximize_metric else 'min'}imize {metric_name}..."
+        )
 
     def is_best(self, metric_val):
         """Check whether `metric_val` is the best seen so far.
@@ -59,8 +63,9 @@ class CheckpointSaver:
             # No checkpoint saved yet
             return True
 
-        return ((self.maximize_metric and self.best_val < metric_val)
-                or (not self.maximize_metric and self.best_val > metric_val))
+        return (self.maximize_metric and self.best_val < metric_val) or (
+            not self.maximize_metric and self.best_val > metric_val
+        )
 
     def _print(self, message):
         """Print a message if logging is enabled."""
@@ -77,23 +82,22 @@ class CheckpointSaver:
             device (torch.device): Device where model resides.
         """
         ckpt_dict = {
-            'model_name': model.__class__.__name__,
-            'model_state': model.cpu().state_dict(),
-            'step': step
+            "model_name": model.__class__.__name__,
+            "model_state": model.cpu().state_dict(),
+            "step": step,
         }
         model.to(device)
 
-        checkpoint_path = os.path.join(self.save_dir,
-                                       f'step_{step}.pth.tar')
+        checkpoint_path = os.path.join(self.save_dir, f"step_{step}.pth.tar")
         torch.save(ckpt_dict, checkpoint_path)
-        self._print(f'Saved checkpoint: {checkpoint_path}')
+        self._print(f"Saved checkpoint: {checkpoint_path}")
 
         if self.is_best(metric_val):
             # Save the best model
             self.best_val = metric_val
-            best_path = os.path.join(self.save_dir, 'best.pth.tar')
+            best_path = os.path.join(self.save_dir, "best.pth.tar")
             shutil.copy(checkpoint_path, best_path)
-            self._print(f'New best checkpoint at step {step}...')
+            self._print(f"New best checkpoint at step {step}...")
 
         # Add checkpoint path to priority queue (lowest priority removed first)
         if self.maximize_metric:
@@ -108,7 +112,7 @@ class CheckpointSaver:
             _, worst_ckpt = self.ckpt_paths.get()
             try:
                 os.remove(worst_ckpt)
-                self._print(f'Removed checkpoint: {worst_ckpt}')
+                self._print(f"Removed checkpoint: {worst_ckpt}")
             except OSError:
                 # Avoid crashing if checkpoint has been removed or protected
                 pass
@@ -127,14 +131,14 @@ def load_model(model, checkpoint_path, gpu_ids, return_step=True):
         model (torch.nn.DataParallel): Model loaded from checkpoint.
         step (int): Step at which checkpoint was saved. Only if `return_step`.
     """
-    device = f"cuda:{gpu_ids[0]}" if gpu_ids else 'cpu'
+    device = f"cuda:{gpu_ids[0]}" if gpu_ids else "cpu"
     ckpt_dict = torch.load(checkpoint_path, map_location=device)
 
     # Build model, load parameters
-    model.load_state_dict(ckpt_dict['model_state'])
+    model.load_state_dict(ckpt_dict["model_state"])
 
     if return_step:
-        step = ckpt_dict['step']
+        step = ckpt_dict["step"]
         return model, step
 
     return model
@@ -150,10 +154,10 @@ def get_available_devices():
     gpu_ids = []
     if torch.cuda.is_available():
         gpu_ids += [gpu_id for gpu_id in range(torch.cuda.device_count())]
-        device = torch.device(f'cuda:{gpu_ids[0]}')
+        device = torch.device(f"cuda:{gpu_ids[0]}")
         torch.cuda.set_device(device)
     else:
-        device = torch.device('cpu')
+        device = torch.device("cpu")
 
     return device, gpu_ids
 
@@ -176,23 +180,25 @@ def visualize(tbx, pred_dict, eval_path, step, split, num_visuals):
 
     visual_ids = np.random.choice(list(pred_dict), size=num_visuals, replace=False)
 
-    with open(eval_path, 'r') as eval_file:
+    with open(eval_path, "r") as eval_file:
         eval_dict = json.load(eval_file)
     for i, id_ in enumerate(visual_ids):
-        pred = pred_dict[id_] or 'N/A'
+        pred = pred_dict[id_] or "N/A"
         example = eval_dict[str(id_)]
-        question = example['question']
-        context = example['context']
-        answers = example['answers']
+        question = example["question"]
+        context = example["context"]
+        answers = example["answers"]
 
-        gold = answers[0] if answers else 'N/A'
-        tbl_fmt = (f'- **Question:** {question}\n'
-                   + f'- **Context:** {context}\n'
-                   + f'- **Answer:** {gold}\n'
-                   + f'- **Prediction:** {pred}')
-        tbx.add_text(tag=f'{split}/{i+1}_of_{num_visuals}',
-                     text_string=tbl_fmt,
-                     global_step=step)
+        gold = answers[0] if answers else "N/A"
+        tbl_fmt = (
+            f"- **Question:** {question}\n"
+            + f"- **Context:** {context}\n"
+            + f"- **Answer:** {gold}\n"
+            + f"- **Prediction:** {pred}"
+        )
+        tbx.add_text(
+            tag=f"{split}/{i+1}_of_{num_visuals}", text_string=tbl_fmt, global_step=step
+        )
 
 
 def get_save_dir(base_dir, name, training, id_max=100):
@@ -209,14 +215,16 @@ def get_save_dir(base_dir, name, training, id_max=100):
         save_dir (str): Path to a new directory with a unique name.
     """
     for uid in range(1, id_max):
-        subdir = 'train' if training else 'test'
-        save_dir = os.path.join(base_dir, subdir, f'{name}-{uid:02d}')
+        subdir = "train" if training else "test"
+        save_dir = os.path.join(base_dir, subdir, f"{name}-{uid:02d}")
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
             return save_dir
 
-    raise RuntimeError('Too many save directories created with the same name. \
-                       Delete old save directories or use another name.')
+    raise RuntimeError(
+        "Too many save directories created with the same name. \
+                       Delete old save directories or use another name."
+    )
 
 
 def get_logger(log_dir, name):
@@ -230,12 +238,14 @@ def get_logger(log_dir, name):
     Returns:
         logger (logging.Logger): Logger instance for logging events.
     """
+
     class StreamHandlerWithTQDM(logging.Handler):
         """Let `logging` print without breaking `tqdm` progress bars.
 
         See Also:
             > https://stackoverflow.com/questions/38543506
         """
+
         def emit(self, record):
             try:
                 msg = self.format(record)
@@ -251,7 +261,7 @@ def get_logger(log_dir, name):
     logger.setLevel(logging.DEBUG)
 
     # Log everything (i.e., DEBUG level and above) to a file
-    log_path = os.path.join(log_dir, 'log.txt')
+    log_path = os.path.join(log_dir, "log.txt")
     file_handler = logging.FileHandler(log_path)
     file_handler.setLevel(logging.DEBUG)
 
@@ -260,11 +270,13 @@ def get_logger(log_dir, name):
     console_handler.setLevel(logging.INFO)
 
     # Create format for the logs
-    file_formatter = logging.Formatter('[%(asctime)s] %(message)s',
-                                       datefmt='%m.%d.%y %H:%M:%S')
+    file_formatter = logging.Formatter(
+        "[%(asctime)s] %(message)s", datefmt="%m.%d.%y %H:%M:%S"
+    )
     file_handler.setFormatter(file_formatter)
-    console_formatter = logging.Formatter('[%(asctime)s] %(message)s',
-                                          datefmt='%m.%d.%y %H:%M:%S')
+    console_formatter = logging.Formatter(
+        "[%(asctime)s] %(message)s", datefmt="%m.%d.%y %H:%M:%S"
+    )
     console_handler.setFormatter(console_formatter)
 
     # add the handlers to the logger
@@ -284,7 +296,7 @@ def torch_from_json(path, dtype=torch.float32):
     Returns:
         tensor (torch.Tensor): Tensor loaded from JSON file.
     """
-    with open(path, 'r') as fh:
+    with open(path, "r") as fh:
         array = np.array(json.load(fh))
 
     tensor = torch.from_numpy(array).type(dtype)
@@ -315,9 +327,8 @@ def discretize(p_start, p_end, max_len=15, no_answer=False):
         end_idxs (torch.Tensor): Hard predictions for end index.
             Shape (batch_size,)
     """
-    if p_start.min() < 0 or p_start.max() > 1 \
-            or p_end.min() < 0 or p_end.max() > 1:
-        raise ValueError('Expected p_start and p_end to have values in [0, 1]')
+    if p_start.min() < 0 or p_start.max() > 1 or p_end.min() < 0 or p_end.max() > 1:
+        raise ValueError("Expected p_start and p_end to have values in [0, 1]")
 
     # Compute pairwise probabilities
     p_start = p_start.unsqueeze(dim=2)
@@ -327,8 +338,9 @@ def discretize(p_start, p_end, max_len=15, no_answer=False):
     # Restrict to pairs (i, j) such that i <= j <= i + max_len - 1
     c_len, device = p_start.size(1), p_start.device
     is_legal_pair = torch.triu(torch.ones((c_len, c_len), device=device))
-    is_legal_pair -= torch.triu(torch.ones((c_len, c_len), device=device),
-                                diagonal=max_len)
+    is_legal_pair -= torch.triu(
+        torch.ones((c_len, c_len), device=device), diagonal=max_len
+    )
     if no_answer:
         # Index 0 is no-answer
         p_no_answer = p_joint[:, 0, 0].clone()
@@ -375,14 +387,13 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
         spans = eval_dict[str(qid)]["spans"]
         uuid = eval_dict[str(qid)]["uuid"]
         if no_answer and (y_start == 0 or y_end == 0):
-            pred_dict[str(qid)] = ''
-            sub_dict[uuid] = ''
+            pred_dict[str(qid)] = ""
+            sub_dict[uuid] = ""
         else:
             if no_answer:
                 y_start, y_end = y_start - 1, y_end - 1
             start_idx = spans[y_start][0]
             end_idx = spans[y_end][1]
-            pred_dict[str(qid)] = context[start_idx: end_idx]
-            sub_dict[uuid] = context[start_idx: end_idx]
+            pred_dict[str(qid)] = context[start_idx:end_idx]
+            sub_dict[uuid] = context[start_idx:end_idx]
     return pred_dict, sub_dict
-

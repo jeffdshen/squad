@@ -28,16 +28,17 @@ class SQuAD(data.Dataset):
         data_path (str): Path to .npz file containing pre-processed dataset.
         use_v2 (bool): Whether to use SQuAD 2.0 questions. Otherwise only use SQuAD 1.1.
     """
+
     def __init__(self, data_path, use_v2=True):
         super(SQuAD, self).__init__()
 
         dataset = np.load(data_path)
-        self.context_idxs = torch.from_numpy(dataset['context_idxs']).long()
-        self.context_char_idxs = torch.from_numpy(dataset['context_char_idxs']).long()
-        self.question_idxs = torch.from_numpy(dataset['ques_idxs']).long()
-        self.question_char_idxs = torch.from_numpy(dataset['ques_char_idxs']).long()
-        self.y1s = torch.from_numpy(dataset['y1s']).long()
-        self.y2s = torch.from_numpy(dataset['y2s']).long()
+        self.context_idxs = torch.from_numpy(dataset["context_idxs"]).long()
+        self.context_char_idxs = torch.from_numpy(dataset["context_char_idxs"]).long()
+        self.question_idxs = torch.from_numpy(dataset["ques_idxs"]).long()
+        self.question_char_idxs = torch.from_numpy(dataset["ques_char_idxs"]).long()
+        self.y1s = torch.from_numpy(dataset["y1s"]).long()
+        self.y2s = torch.from_numpy(dataset["y2s"]).long()
 
         if use_v2:
             # SQuAD 2.0: Use index 0 for no-answer token (token 1 = OOV)
@@ -54,19 +55,22 @@ class SQuAD(data.Dataset):
             self.y2s += 1
 
         # SQuAD 1.1: Ignore no-answer examples
-        self.ids = torch.from_numpy(dataset['ids']).long()
-        self.valid_idxs = [idx for idx in range(len(self.ids))
-                           if use_v2 or self.y1s[idx].item() >= 0]
+        self.ids = torch.from_numpy(dataset["ids"]).long()
+        self.valid_idxs = [
+            idx for idx in range(len(self.ids)) if use_v2 or self.y1s[idx].item() >= 0
+        ]
 
     def __getitem__(self, idx):
         idx = self.valid_idxs[idx]
-        example = (self.context_idxs[idx],
-                   self.context_char_idxs[idx],
-                   self.question_idxs[idx],
-                   self.question_char_idxs[idx],
-                   self.y1s[idx],
-                   self.y2s[idx],
-                   self.ids[idx])
+        example = (
+            self.context_idxs[idx],
+            self.context_char_idxs[idx],
+            self.question_idxs[idx],
+            self.question_char_idxs[idx],
+            self.y1s[idx],
+            self.y2s[idx],
+            self.ids[idx],
+        )
 
         return example
 
@@ -91,6 +95,7 @@ def collate_fn(examples):
     Adapted from:
         https://github.com/yunjey/seq2seq-dataloader
     """
+
     def merge_0d(scalars, dtype=torch.int64):
         return torch.tensor(scalars, dtype=dtype)
 
@@ -112,9 +117,15 @@ def collate_fn(examples):
         return padded
 
     # Group by tensor type
-    context_idxs, context_char_idxs, \
-        question_idxs, question_char_idxs, \
-        y1s, y2s, ids = zip(*examples)
+    (
+        context_idxs,
+        context_char_idxs,
+        question_idxs,
+        question_char_idxs,
+        y1s,
+        y2s,
+        ids,
+    ) = zip(*examples)
 
     # Merge into batch tensors
     context_idxs = merge_1d(context_idxs)
@@ -125,6 +136,12 @@ def collate_fn(examples):
     y2s = merge_0d(y2s)
     ids = merge_0d(ids)
 
-    return (context_idxs, context_char_idxs,
-            question_idxs, question_char_idxs,
-            y1s, y2s, ids)
+    return (
+        context_idxs,
+        context_char_idxs,
+        question_idxs,
+        question_char_idxs,
+        y1s,
+        y2s,
+        ids,
+    )

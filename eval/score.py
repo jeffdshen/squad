@@ -14,25 +14,24 @@ def eval_dicts(gold_dict, pred_dict, no_answer):
     avna = f1 = em = total = 0
     for key, value in pred_dict.items():
         total += 1
-        ground_truths = gold_dict[key]['answers']
+        ground_truths = gold_dict[key]["answers"]
         prediction = value
         em += metric_max_over_ground_truths(compute_em, prediction, ground_truths)
         f1 += metric_max_over_ground_truths(compute_f1, prediction, ground_truths)
         if no_answer:
             avna += compute_avna(prediction, ground_truths)
 
-    eval_dict = {'EM': 100. * em / total,
-                 'F1': 100. * f1 / total}
+    eval_dict = {"EM": 100.0 * em / total, "F1": 100.0 * f1 / total}
 
     if no_answer:
-        eval_dict['AvNA'] = 100. * avna / total
+        eval_dict["AvNA"] = 100.0 * avna / total
 
     return eval_dict
 
 
 def metric_max_over_ground_truths(metric_fn, prediction, ground_truths):
     if not ground_truths:
-        return metric_fn(prediction, '')
+        return metric_fn(prediction, "")
     scores_for_ground_truths = []
     for ground_truth in ground_truths:
         score = metric_fn(prediction, ground_truth)
@@ -51,15 +50,15 @@ def normalize_answer(s):
     """Convert to lowercase and remove punctuation, articles and extra whitespace."""
 
     def remove_articles(text):
-        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
-        return re.sub(regex, ' ', text)
+        regex = re.compile(r"\b(a|an|the)\b", re.UNICODE)
+        return re.sub(regex, " ", text)
 
     def white_space_fix(text):
-        return ' '.join(text.split())
+        return " ".join(text.split())
 
     def remove_punc(text):
         exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
+        return "".join(ch for ch in text if ch not in exclude)
 
     def lower(text):
         return text.lower()

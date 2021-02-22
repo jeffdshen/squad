@@ -15,10 +15,11 @@ import argparse
 
 from preprocess import bidaf_setup
 
+
 def main():
-    parser = argparse.ArgumentParser('Download and pre-process SQuAD')
+    parser = argparse.ArgumentParser("Download and pre-process SQuAD")
     subparsers = parser.add_subparsers()
-    bidaf = subparsers.add_parser('bidaf')
+    bidaf = subparsers.add_parser("bidaf")
     bidaf_setup.add_args(bidaf)
     bidaf.set_defaults(setup=bidaf_setup.setup)
 
@@ -26,5 +27,5 @@ def main():
     args.setup(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
