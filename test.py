@@ -28,7 +28,7 @@ def main(args):
     bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
     bidaf_trainer.add_test_args(bidaf)
     bidaf.set_defaults(test=bidaf_trainer.test)
-    bidaf.set_defaults(data_sub_dir='bidaf')
+    bidaf.set_defaults(data_sub_dir="bidaf")
 
     args = parser.parse_args()
 

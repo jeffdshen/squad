@@ -20,7 +20,7 @@ def main():
     bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
     bidaf_trainer.add_train_args(bidaf)
     bidaf.set_defaults(train=bidaf_trainer.train)
-    bidaf.set_defaults(data_sub_dir='bidaf')
+    bidaf.set_defaults(data_sub_dir="bidaf")
 
     args = parser.parse_args()
     if args.metric_name == "NLL":
