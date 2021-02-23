@@ -367,10 +367,10 @@ def setup(args):
     nlp = spacy.blank("en")
 
     # Preprocess dataset
-    args.train_file = url_to_data_path(args.data_dir, args.train_url)
-    args.dev_file = url_to_data_path(args.data_dir, args.dev_url)
+    args.train_file = args.train_url
+    args.dev_file = args.dev_url
     if args.include_test_examples:
-        args.test_file = url_to_data_path(args.data_dir, args.test_url)
+        args.test_file = args.test_url
     glove_dir = url_to_data_path(args.data_dir, args.glove_url.replace(".zip", ""))
     glove_ext = f".txt" if glove_dir.endswith("d") else f".{args.glove_dim}d.txt"
     args.glove_file = os.path.join(glove_dir, os.path.basename(glove_dir) + glove_ext)
@@ -382,17 +382,17 @@ def add_args(parser):
     parser.add_argument(
         "--train_url",
         type=str,
-        default="https://github.com/chrischute/squad/data/train-v2.0.json",
+        default="./data/train-v2.0.json",
     )
     parser.add_argument(
         "--dev_url",
         type=str,
-        default="https://github.com/chrischute/squad/data/dev-v2.0.json",
+        default="./data/dev-v2.0.json",
     )
     parser.add_argument(
         "--test_url",
         type=str,
-        default="https://github.com/chrischute/squad/data/test-v2.0.json",
+        default="./data/test-v2.0.json",
     )
     parser.add_argument(
         "--glove_url",
