@@ -219,8 +219,6 @@ def evaluate(model, data_loader, device, eval_file, max_len, use_squad_v2):
 
 def add_train_args(parser):
     """Add arguments needed in train.py."""
-
-    add_common_args(parser)
     add_train_test_args(parser)
 
     parser.add_argument(
@@ -383,7 +381,6 @@ def add_test_args():
     """Get arguments needed in test.py."""
     parser = argparse.ArgumentParser("Test a trained model on SQuAD")
 
-    add_common_args(parser)
     add_train_test_args(parser)
 
     parser.add_argument(
