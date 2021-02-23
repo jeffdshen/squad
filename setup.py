@@ -19,10 +19,12 @@ import util
 
 def main():
     parser = argparse.ArgumentParser("Download and pre-process SQuAD")
-    util.add_data_args(parser)
+    parent_parser = argparse.ArgumentParser(add_help=False)
+
+    util.add_data_args(parent_parser)
 
     subparsers = parser.add_subparsers()
-    bidaf = subparsers.add_parser("bidaf")
+    bidaf = subparsers.add_parser("bidaf", parents = [parent_parser])
     bidaf_setup.add_args(bidaf)
     bidaf.set_defaults(setup=bidaf_setup.setup)
     bidaf.set_defaults(data_sub_dir='bidaf')
