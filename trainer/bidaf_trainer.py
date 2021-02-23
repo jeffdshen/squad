@@ -377,25 +377,9 @@ def test(args):
     eval.write_submission(sub_path, sub_dict)
 
 
-def add_test_args():
+def add_test_args(parser):
     """Get arguments needed in test.py."""
-    parser = argparse.ArgumentParser("Test a trained model on SQuAD")
-
     add_train_test_args(parser)
-
-    parser.add_argument(
-        "--split",
-        type=str,
-        default="dev",
-        choices=("train", "dev", "test"),
-        help="Split to use for testing.",
-    )
-    parser.add_argument(
-        "--sub_file",
-        type=str,
-        default="submission.csv",
-        help="Name for submission file.",
-    )
 
 
 def add_train_test_args(parser):
@@ -436,10 +420,4 @@ def add_train_test_args(parser):
         type=int,
         default=10,
         help="Number of examples to visualize in TensorBoard.",
-    )
-    parser.add_argument(
-        "--load_path",
-        type=str,
-        default=None,
-        help="Path to load as a model checkpoint.",
     )

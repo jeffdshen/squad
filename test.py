@@ -18,11 +18,11 @@ import util
 
 
 def main(args):
-    parser = argparse.ArgumentParser("Train a model on SQuAD")
+    parser = argparse.ArgumentParser("Test a trained model on SQuAD")
     parent_parser = argparse.ArgumentParser(add_help=False)
 
     util.add_data_args(parent_parser)
-    util.add_train_test_args(parent_parser)
+    util.add_test_args(parent_parser)
     subparsers = parser.add_subparsers()
 
     bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])

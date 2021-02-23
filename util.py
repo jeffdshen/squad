@@ -34,6 +34,27 @@ def get_save_dir(base_dir, name, training, id_max=100):
     )
 
 
+def add_train_args(parser):
+    add_train_test_args(parser)
+
+
+def add_test_args(parser):
+    add_train_test_args(parser)
+    parser.add_argument(
+        "--split",
+        type=str,
+        default="dev",
+        choices=("train", "traind", "dev", "test"),
+        help="Split to use for testing.",
+    )
+    parser.add_argument(
+        "--sub_file",
+        type=str,
+        default="submission.csv",
+        help="Name for submission file.",
+    )
+
+
 def add_train_test_args(parser):
     parser.add_argument(
         "--name",
@@ -47,6 +68,12 @@ def add_train_test_args(parser):
         type=str,
         default="./save/",
         help="Base directory for saving information.",
+    )
+    parser.add_argument(
+        "--load_path",
+        type=str,
+        default=None,
+        help="Path to load as a model checkpoint.",
     )
 
 
