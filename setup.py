@@ -14,16 +14,23 @@ Author:
 import argparse
 
 from preprocess import bidaf_setup
+import util
 
 
 def main():
     parser = argparse.ArgumentParser("Download and pre-process SQuAD")
+    util.add_data_args(parser)
+
     subparsers = parser.add_subparsers()
     bidaf = subparsers.add_parser("bidaf")
     bidaf_setup.add_args(bidaf)
     bidaf.set_defaults(setup=bidaf_setup.setup)
+    bidaf.set_defaults(data_sub_dir='bidaf')
 
     args = parser.parse_args()
+    args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
+    util.build_data_dir_path(args)
+
     args.setup(args)
 
 

@@ -44,8 +44,8 @@ def download_url(url, output_path, show_progress=True):
         urllib.request.urlretrieve(url, output_path)
 
 
-def url_to_data_path(url):
-    return os.path.join("./data/", url.split("/")[-1])
+def url_to_data_path(data_dir, url):
+    return os.path.join(data_dir, url.split("/")[-1])
 
 
 def download(args):
@@ -55,7 +55,7 @@ def download(args):
     ]
 
     for name, url in downloads:
-        output_path = url_to_data_path(url)
+        output_path = url_to_data_path(args.data_dir, url)
         if not os.path.exists(output_path):
             print(f"Downloading {name}...")
             download_url(url, output_path)
@@ -367,32 +367,18 @@ def setup(args):
     nlp = spacy.blank("en")
 
     # Preprocess dataset
-    args.train_file = url_to_data_path(args.train_url)
-    args.dev_file = url_to_data_path(args.dev_url)
+    args.train_file = url_to_data_path(args.data_dir, args.train_url)
+    args.dev_file = url_to_data_path(args.data_dir, args.dev_url)
     if args.include_test_examples:
-        args.test_file = url_to_data_path(args.test_url)
-    glove_dir = url_to_data_path(args.glove_url.replace(".zip", ""))
+        args.test_file = url_to_data_path(args.data_dir, args.test_url)
+    glove_dir = url_to_data_path(args.data_dir, args.glove_url.replace(".zip", ""))
     glove_ext = f".txt" if glove_dir.endswith("d") else f".{args.glove_dim}d.txt"
     args.glove_file = os.path.join(glove_dir, os.path.basename(glove_dir) + glove_ext)
     pre_process(args, nlp)
 
 
-def add_common_args(parser):
-    """Add arguments common to all 3 scripts: setup.py, train.py, test.py"""
-    parser.add_argument("--train_record_file", type=str, default="./data/train.npz")
-    parser.add_argument("--dev_record_file", type=str, default="./data/dev.npz")
-    parser.add_argument("--test_record_file", type=str, default="./data/test.npz")
-    parser.add_argument("--word_emb_file", type=str, default="./data/word_emb.json")
-    parser.add_argument("--char_emb_file", type=str, default="./data/char_emb.json")
-    parser.add_argument("--train_eval_file", type=str, default="./data/train_eval.json")
-    parser.add_argument("--dev_eval_file", type=str, default="./data/dev_eval.json")
-    parser.add_argument("--test_eval_file", type=str, default="./data/test_eval.json")
-
-
 def add_args(parser):
     """Get arguments needed in setup.py."""
-    add_common_args(parser)
-
     parser.add_argument(
         "--train_url",
         type=str,
@@ -413,11 +399,6 @@ def add_args(parser):
         type=str,
         default="http://nlp.stanford.edu/data/glove.840B.300d.zip",
     )
-    parser.add_argument("--dev_meta_file", type=str, default="./data/dev_meta.json")
-    parser.add_argument("--test_meta_file", type=str, default="./data/test_meta.json")
-    parser.add_argument("--word2idx_file", type=str, default="./data/word2idx.json")
-    parser.add_argument("--char2idx_file", type=str, default="./data/char2idx.json")
-    parser.add_argument("--answer_file", type=str, default="./data/answer.json")
     parser.add_argument(
         "--para_limit", type=int, default=400, help="Max number of words in a paragraph"
     )

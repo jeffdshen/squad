@@ -14,21 +14,29 @@ Author:
 import argparse
 
 from trainer import bidaf_trainer
+import util
 
 
 def main(args):
     parser = argparse.ArgumentParser("Train a model on SQuAD")
+    util.add_data_args(parser)
+    util.add_train_test_args(parser)
     subparsers = parser.add_subparsers()
 
     bidaf = subparsers.add_parser("bidaf")
     bidaf_trainer.add_test_args(bidaf)
     bidaf.set_defaults(test=bidaf_trainer.test)
+    bidaf.set_defaults(data_sub_dir='bidaf')
 
     args = parser.parse_args()
 
     # Require load_path for test.py
     if not args.load_path:
         raise argparse.ArgumentError("Missing required argument --load_path")
+
+    args.save_dir = util.get_save_dir(args.save_dir, args.name, training=False)
+    args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
+    util.build_data_dir_path(args)
 
     test = args.test
     del args.test

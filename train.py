@@ -6,15 +6,19 @@ Author:
 import argparse
 
 from trainer import bidaf_trainer
+import util
 
 
 def main():
     parser = argparse.ArgumentParser("Train a model on SQuAD")
+    util.add_data_args(parser)
+    util.add_train_test_args(parser)
     subparsers = parser.add_subparsers()
 
     bidaf = subparsers.add_parser("bidaf")
     bidaf_trainer.add_train_args(bidaf)
     bidaf.set_defaults(train=bidaf_trainer.train)
+    bidaf.set_defaults(data_sub_dir='bidaf')
 
     args = parser.parse_args()
     if args.metric_name == "NLL":
@@ -25,6 +29,10 @@ def main():
         args.maximize_metric = True
     else:
         raise ValueError(f'Unrecognized metric name: "{args.metric_name}"')
+
+    args.save_dir = util.get_save_dir(args.save_dir, args.name, training=True)
+    args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
+    util.build_data_dir_path(args)
 
     train = args.train
     del args.train

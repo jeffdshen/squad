@@ -30,7 +30,6 @@ import trainer.stats as stats
 
 def train(args):
     # Set up logging and devices
-    args.save_dir = util.get_save_dir(args.save_dir, args.name, training=True)
     log = util.get_logger(args.save_dir, args.name)
     tbx = SummaryWriter(args.save_dir)
     device, args.gpu_ids = util.get_available_devices()
@@ -276,7 +275,6 @@ def add_train_args(parser):
 
 def test(args):
     # Set up logging
-    args.save_dir = util.get_save_dir(args.save_dir, args.name, training=False)
     log = util.get_logger(args.save_dir, args.name)
     log.info(f"Args: {dumps(vars(args), indent=4, sort_keys=True)}")
     device, gpu_ids = util.get_available_devices()
@@ -403,27 +401,8 @@ def add_test_args():
     )
 
 
-def add_common_args(parser):
-    """Add arguments common to all 3 scripts: setup.py, train.py, test.py"""
-    parser.add_argument("--train_record_file", type=str, default="./data/train.npz")
-    parser.add_argument("--dev_record_file", type=str, default="./data/dev.npz")
-    parser.add_argument("--test_record_file", type=str, default="./data/test.npz")
-    parser.add_argument("--word_emb_file", type=str, default="./data/word_emb.json")
-    parser.add_argument("--char_emb_file", type=str, default="./data/char_emb.json")
-    parser.add_argument("--train_eval_file", type=str, default="./data/train_eval.json")
-    parser.add_argument("--dev_eval_file", type=str, default="./data/dev_eval.json")
-    parser.add_argument("--test_eval_file", type=str, default="./data/test_eval.json")
-
-
 def add_train_test_args(parser):
     """Add arguments common to train.py and test.py"""
-    parser.add_argument(
-        "--name",
-        "-n",
-        type=str,
-        required=True,
-        help="Name to identify training or test run.",
-    )
     parser.add_argument(
         "--max_ans_len",
         type=int,
@@ -435,12 +414,6 @@ def add_train_test_args(parser):
         type=int,
         default=4,
         help="Number of sub-processes to use per data loader.",
-    )
-    parser.add_argument(
-        "--save_dir",
-        type=str,
-        default="./save/",
-        help="Base directory for saving information.",
     )
     parser.add_argument(
         "--batch_size",
