@@ -380,19 +380,13 @@ def setup(args):
 def add_args(parser):
     """Get arguments needed in setup.py."""
     parser.add_argument(
-        "--train_url",
-        type=str,
-        default="./data/train-v2.0.json",
+        "--train_url", type=str, default="./data/train-v2.0.json",
     )
     parser.add_argument(
-        "--dev_url",
-        type=str,
-        default="./data/dev-v2.0.json",
+        "--dev_url", type=str, default="./data/dev-v2.0.json",
     )
     parser.add_argument(
-        "--test_url",
-        type=str,
-        default="./data/test-v2.0.json",
+        "--test_url", type=str, default="./data/test-v2.0.json",
     )
     parser.add_argument(
         "--glove_url",
