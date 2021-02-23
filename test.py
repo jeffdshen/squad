@@ -17,7 +17,7 @@ from trainer import bidaf_trainer
 import util
 
 
-def main(args):
+def main():
     parser = argparse.ArgumentParser("Test a trained model on SQuAD")
     parent_parser = argparse.ArgumentParser(add_help=False)
 
