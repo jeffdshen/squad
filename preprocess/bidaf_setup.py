@@ -332,7 +332,13 @@ def pre_process(args, nlp):
         char2idx_dict,
     )
     dev_meta = build_features(
-        args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict
+        args,
+        dev_examples,
+        "dev",
+        args.dev_record_file,
+        word2idx_dict,
+        char2idx_dict,
+        is_test=True,
     )
     if args.include_test_examples:
         test_examples, test_eval = process_file(
@@ -380,19 +386,13 @@ def setup(args):
 def add_args(parser):
     """Get arguments needed in setup.py."""
     parser.add_argument(
-        "--train_url",
-        type=str,
-        default="./data/train-v2.0.json",
+        "--train_url", type=str, default="./data/train-v2.0.json",
     )
     parser.add_argument(
-        "--dev_url",
-        type=str,
-        default="./data/dev-v2.0.json",
+        "--dev_url", type=str, default="./data/dev-v2.0.json",
     )
     parser.add_argument(
-        "--test_url",
-        type=str,
-        default="./data/test-v2.0.json",
+        "--test_url", type=str, default="./data/test-v2.0.json",
     )
     parser.add_argument(
         "--glove_url",
