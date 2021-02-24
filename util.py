@@ -44,7 +44,7 @@ def add_test_args(parser):
         "--split",
         type=str,
         default="dev",
-        choices=("train", "traind", "dev", "test"),
+        choices=("train", "dev", "test"),
         help="Split to use for testing.",
     )
     parser.add_argument(
