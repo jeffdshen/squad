@@ -97,9 +97,6 @@ def add_data_args(parser):
 
 
 def get_data_dir(base_dir, name):
-    if name is None:
-        return base_dir
-
     data_dir = os.path.join(base_dir, f"{name}")
     if not os.path.exists(data_dir):
         os.makedirs(data_dir)

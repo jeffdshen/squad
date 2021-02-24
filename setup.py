@@ -13,7 +13,7 @@ Author:
 
 import argparse
 
-from preprocess import bidaf_setup, split_setup
+from preprocess import bidaf_setup
 import util
 
 
@@ -28,11 +28,6 @@ def main():
     bidaf_setup.add_args(bidaf)
     bidaf.set_defaults(setup=bidaf_setup.setup)
     bidaf.set_defaults(data_sub_dir="bidaf")
-
-    split = subparsers.add_parser("split", parents=[parent_parser])
-    split_setup.add_args(split)
-    split.set_defaults(setup=split_setup.setup)
-    split.set_defaults(data_sub_dir=None)
 
     args = parser.parse_args()
     args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
