@@ -352,7 +352,7 @@ def pre_process(args, nlp):
     save(args.dev_meta_file, dev_meta, message="dev meta")
 
     if args.include_test_examples:
-        test_examples, test_eval = process_file(
+        test_examples, test_eval, _, _ = process_file(
             args.test_file, "test", nlp
         )
         test_meta = build_features(
