@@ -76,7 +76,7 @@ def setup(args):
     print(f"Splitting train examples")
     with open(args.train_url, "r") as file:
         source = json.load(file)
-        traind, trainx = split(source, random.Random(args.seed), dev_stats["articles"])
+        trainx, traind = split(source, random.Random(args.seed), dev_stats["articles"])
 
     save(args.trainx_url, trainx, "train x")
     save(args.traind_url, traind, 'train dev')
