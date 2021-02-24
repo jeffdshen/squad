@@ -89,8 +89,9 @@ def convert_idx(text, tokens):
     return spans
 
 
-def process_file(filename, data_type, word_counter, char_counter, nlp):
+def process_file(filename, data_type, nlp):
     print(f"Pre-processing {data_type} examples...")
+    word_counter, char_counter = Counter(), Counter()
     examples = []
     eval_examples = {}
     total = 0
@@ -147,7 +148,7 @@ def process_file(filename, data_type, word_counter, char_counter, nlp):
                         "uuid": qa["id"],
                     }
         print(f"{len(examples)} questions in total")
-    return examples, eval_examples
+    return examples, eval_examples, word_counter, char_counter
 
 
 def get_embedding(
@@ -195,7 +196,7 @@ def is_answerable(example):
 
 
 def build_features(
-    args, examples, data_type, out_file, word2idx_dict, char2idx_dict, is_test=False
+    args, examples, data_type, out_file, word2idx_dict, char2idx_dict, is_test=True
 ):
     para_limit = args.test_para_limit if is_test else args.para_limit
     ques_limit = args.test_ques_limit if is_test else args.ques_limit
@@ -304,9 +305,8 @@ def save(filename, obj, message=None):
 
 def pre_process(args, nlp):
     # Process training set and use it to decide on the word/character vocabularies
-    word_counter, char_counter = Counter(), Counter()
-    train_examples, train_eval = process_file(
-        args.train_file, "train", word_counter, char_counter, nlp
+    trainx_examples, trainx_eval, word_counter, char_counter = process_file(
+        args.trainx_file, "trainx", nlp
     )
     word_emb_mat, word2idx_dict = get_embedding(
         word_counter,
@@ -320,25 +320,41 @@ def pre_process(args, nlp):
     )
 
     # Process dev and test sets
-    dev_examples, dev_eval = process_file(
-        args.dev_file, "dev", word_counter, char_counter, nlp
-    )
-    build_features(
+    trainx_meta = build_features(
         args,
-        train_examples,
-        "train",
-        args.train_record_file,
+        trainx_examples,
+        "trainx",
+        args.trainx_record_file,
+        word2idx_dict,
+        char2idx_dict,
+        is_test=False,
+    )
+    save(args.trainx_eval_file, trainx_eval, message="trainx eval")
+    save(args.trainx_meta_file, trainx_meta, message="trainx meta")
+
+    traind_examples, traind_eval, _, _ = process_file(args.traind_file, "traind", nlp)
+    traind_meta = build_features(
+        args,
+        traind_examples,
+        "traind",
+        args.traind_record_file,
         word2idx_dict,
         char2idx_dict,
     )
+    save(args.traind_eval_file, traind_eval, message="traind eval")
+    save(args.traind_meta_file, traind_meta, message="traind meta")
+
+    dev_examples, dev_eval, _, _ = process_file(args.dev_file, "dev", nlp)
     dev_meta = build_features(
         args, dev_examples, "dev", args.dev_record_file, word2idx_dict, char2idx_dict
     )
+    save(args.dev_eval_file, dev_eval, message="dev eval")
+    save(args.dev_meta_file, dev_meta, message="dev meta")
+
     if args.include_test_examples:
         test_examples, test_eval = process_file(
             args.test_file, "test", word_counter, char_counter, nlp
         )
-        save(args.test_eval_file, test_eval, message="test eval")
         test_meta = build_features(
             args,
             test_examples,
@@ -346,17 +362,14 @@ def pre_process(args, nlp):
             args.test_record_file,
             word2idx_dict,
             char2idx_dict,
-            is_test=True,
         )
+        save(args.test_eval_file, test_eval, message="test eval")
         save(args.test_meta_file, test_meta, message="test meta")
 
     save(args.word_emb_file, word_emb_mat, message="word embedding")
     save(args.char_emb_file, char_emb_mat, message="char embedding")
-    save(args.train_eval_file, train_eval, message="train eval")
-    save(args.dev_eval_file, dev_eval, message="dev eval")
     save(args.word2idx_file, word2idx_dict, message="word dictionary")
     save(args.char2idx_file, char2idx_dict, message="char dictionary")
-    save(args.dev_meta_file, dev_meta, message="dev meta")
 
 
 def setup(args):
@@ -367,10 +380,6 @@ def setup(args):
     nlp = spacy.blank("en")
 
     # Preprocess dataset
-    args.train_file = args.train_url
-    args.dev_file = args.dev_url
-    if args.include_test_examples:
-        args.test_file = args.test_url
     glove_dir = url_to_data_path(args.data_dir, args.glove_url.replace(".zip", ""))
     glove_ext = f".txt" if glove_dir.endswith("d") else f".{args.glove_dim}d.txt"
     args.glove_file = os.path.join(glove_dir, os.path.basename(glove_dir) + glove_ext)
@@ -380,13 +389,16 @@ def setup(args):
 def add_args(parser):
     """Get arguments needed in setup.py."""
     parser.add_argument(
-        "--train_url", type=str, default="./data/train-v2.0.json",
+        "--trainx_file", type=str, default="./data/trainx-v2.0.json",
     )
     parser.add_argument(
-        "--dev_url", type=str, default="./data/dev-v2.0.json",
+        "--traind_file", type=str, default="./data/traind-v2.0.json",
     )
     parser.add_argument(
-        "--test_url", type=str, default="./data/test-v2.0.json",
+        "--dev_file", type=str, default="./data/dev-v2.0.json",
+    )
+    parser.add_argument(
+        "--test_file", type=str, default="./data/test-v2.0.json",
     )
     parser.add_argument(
         "--glove_url",

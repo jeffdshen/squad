@@ -44,7 +44,7 @@ def add_test_args(parser):
         "--split",
         type=str,
         default="dev",
-        choices=("train", "traind", "dev", "test"),
+        choices=("trainx", "traind", "dev", "test"),
         help="Split to use for testing.",
     )
     parser.add_argument(
@@ -80,18 +80,24 @@ def add_train_test_args(parser):
 def add_data_args(parser):
     """Add arguments common to all 3 scripts: setup.py, train.py, test.py"""
     parser.add_argument("--data_dir", type=str, default="./data/")
-    parser.add_argument("--train_record_file", type=str, default="train.npz")
+
+    parser.add_argument("--trainx_record_file", type=str, default="trainx.npz")
+    parser.add_argument("--traind_record_file", type=str, default="traind.npz")
     parser.add_argument("--dev_record_file", type=str, default="dev.npz")
     parser.add_argument("--test_record_file", type=str, default="test.npz")
-    parser.add_argument("--word_emb_file", type=str, default="word_emb.json")
-    parser.add_argument("--char_emb_file", type=str, default="char_emb.json")
-    parser.add_argument("--train_eval_file", type=str, default="train_eval.json")
+
+    parser.add_argument("--trainx_eval_file", type=str, default="trainx_eval.json")
+    parser.add_argument("--traind_eval_file", type=str, default="traind_eval.json")
     parser.add_argument("--dev_eval_file", type=str, default="dev_eval.json")
     parser.add_argument("--test_eval_file", type=str, default="test_eval.json")
 
-    # TODO delete?
+    parser.add_argument("--trainx_meta_file", type=str, default="trainx_meta.json")
+    parser.add_argument("--traind_meta_file", type=str, default="traind_meta.json")
     parser.add_argument("--dev_meta_file", type=str, default="dev_meta.json")
     parser.add_argument("--test_meta_file", type=str, default="test_meta.json")
+
+    parser.add_argument("--word_emb_file", type=str, default="word_emb.json")
+    parser.add_argument("--char_emb_file", type=str, default="char_emb.json")
     parser.add_argument("--word2idx_file", type=str, default="word2idx.json")
     parser.add_argument("--char2idx_file", type=str, default="char2idx.json")
 
