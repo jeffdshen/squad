@@ -372,7 +372,10 @@ def test(args):
         )
 
     # Write submission file
-    sub_path = join(args.save_dir, args.split + "_" + args.sub_file)
+    if args.split == "dev":
+        sub_path = join(args.save_dir, "val" + "_" + args.sub_file)
+    else:
+        sub_path = join(args.save_dir, args.split + "_" + args.sub_file)
     log.info(f"Writing submission file to {sub_path}...")
     eval.write_submission(sub_path, sub_dict)
 
