@@ -12,8 +12,9 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torch.optim.lr_scheduler as sched
 import torch.utils.data as data
+import torch.cuda.amp as amp
 
-import argparse
+
 from collections import OrderedDict
 from json import dumps
 from tensorboardX import SummaryWriter
@@ -100,6 +101,8 @@ def train(args):
     log.info("Training...")
     steps_till_eval = args.eval_steps
     epoch = step // len(train_dataset)
+    scaler = amp.GradScaler()
+
     while epoch != args.num_epochs:
         epoch += 1
         log.info(f"Starting epoch {epoch}...")
@@ -112,15 +115,18 @@ def train(args):
                 optimizer.zero_grad()
 
                 # Forward
-                log_p1, log_p2 = model(cw_idxs, qw_idxs)
-                y1, y2 = y1.to(device), y2.to(device)
-                loss = F.nll_loss(log_p1, y1) + F.nll_loss(log_p2, y2)
-                loss_val = loss.item()
+                with amp.autocast():
+                    log_p1, log_p2 = model(cw_idxs, qw_idxs)
+                    y1, y2 = y1.to(device), y2.to(device)
+                    loss = F.nll_loss(log_p1, y1) + F.nll_loss(log_p2, y2)
+                    loss_val = loss.item()
 
                 # Backward
-                loss.backward()
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
                 nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
                 scheduler.step(step // batch_size)
                 ema(model, step // batch_size)
 

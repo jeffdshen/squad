@@ -7,6 +7,7 @@ Author:
 import models.bidaf_layers as layers
 import torch
 import torch.nn as nn
+import torch.cuda.amp as amp
 
 
 class BiDAF(nn.Module):
@@ -56,6 +57,7 @@ class BiDAF(nn.Module):
 
         self.out = layers.BiDAFOutput(hidden_size=hidden_size, drop_prob=drop_prob)
 
+    @amp.autocast()
     def forward(self, cw_idxs, qw_idxs):
         c_mask = torch.zeros_like(cw_idxs) != cw_idxs
         q_mask = torch.zeros_like(qw_idxs) != qw_idxs
