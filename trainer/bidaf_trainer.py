@@ -79,7 +79,7 @@ def train(args):
 
     # Get data loader
     log.info("Building dataset...")
-    train_dataset = SQuAD(args.trainx_record_file, args.use_squad_v2)
+    train_dataset = SQuAD(args.train_record_file, args.use_squad_v2)
     train_loader = data.DataLoader(
         train_dataset,
         batch_size=args.batch_size,
@@ -87,7 +87,7 @@ def train(args):
         num_workers=args.num_workers,
         collate_fn=collate_fn,
     )
-    dev_dataset = SQuAD(args.traind_record_file, args.use_squad_v2)
+    dev_dataset = SQuAD(args.dev_record_file, args.use_squad_v2)
     dev_loader = data.DataLoader(
         dev_dataset,
         batch_size=args.batch_size,
@@ -142,7 +142,7 @@ def train(args):
                         model,
                         dev_loader,
                         device,
-                        args.traind_eval_file,
+                        args.dev_eval_file,
                         args.max_ans_len,
                         args.use_squad_v2,
                     )
@@ -162,9 +162,9 @@ def train(args):
                     util.visualize(
                         tbx,
                         pred_dict=pred_dict,
-                        eval_path=args.traind_eval_file,
+                        eval_path=args.dev_eval_file,
                         step=step,
-                        split="traind",
+                        split="dev",
                         num_visuals=args.num_visuals,
                     )
 
