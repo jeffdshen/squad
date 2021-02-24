@@ -353,7 +353,7 @@ def pre_process(args, nlp):
 
     if args.include_test_examples:
         test_examples, test_eval = process_file(
-            args.test_file, "test", word_counter, char_counter, nlp
+            args.test_file, "test", nlp
         )
         test_meta = build_features(
             args,
