@@ -75,7 +75,7 @@ def train(args):
     )
 
     # Get optimizer and scheduler
-    optimizer = optim.Adadelta(model.parameters(), args.lr, weight_decay=args.l2_wd)
+    optimizer = optim.Adam(model.parameters(), args.lr, weight_decay=args.l2_wd)
     scheduler = sched.LambdaLR(optimizer, lambda s: 1.0)  # Constant LR
 
     # Get data loader
@@ -233,7 +233,7 @@ def add_train_args(parser):
         default=50000,
         help="Number of steps between successive evaluations.",
     )
-    parser.add_argument("--lr", type=float, default=0.5, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate.")
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
     parser.add_argument(
         "--num_epochs",
