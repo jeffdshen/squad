@@ -83,7 +83,6 @@ def train(args):
             dtypes=[torch.long],
             device=device,
             depth=5,
-            verbose=2,
         )
     )
     model.train()
