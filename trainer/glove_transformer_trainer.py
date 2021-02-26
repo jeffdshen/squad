@@ -81,7 +81,6 @@ def train(args):
             model,
             input_size=(args.max_positions, args.batch_size),
             dtypes=[torch.long],
-            batch_dim=1,
             device=device,
             depth=5,
             verbose=2,
