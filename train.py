@@ -24,7 +24,7 @@ def main():
 
     glove_transformer = subparsers.add_parser("glove_transformer", parents=[parent_parser])
     glove_transformer_trainer.add_train_args(glove_transformer)
-    glove_transformer.set_defaults(test=glove_transformer_trainer.train)
+    glove_transformer.set_defaults(train=glove_transformer_trainer.train)
     glove_transformer.set_defaults(data_sub_dir="bidaf")
 
     args = parser.parse_args()
