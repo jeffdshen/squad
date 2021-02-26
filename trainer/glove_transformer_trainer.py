@@ -260,6 +260,7 @@ def evaluate(
 
             # Get F1 and EM scores
             p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
+            p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
             starts, ends = util.discretize(p1, p2, max_len, use_squad_v2)
 
             # Log info
@@ -392,6 +393,7 @@ def test(args):
 
             # Get F1 and EM scores
             p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
+            p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
             starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
 
             # Log info
