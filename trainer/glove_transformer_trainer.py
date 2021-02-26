@@ -259,7 +259,7 @@ def evaluate(
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(dim=-1)
+            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
             starts, ends = util.discretize(p1, p2, max_len, use_squad_v2)
 
             # Log info
@@ -391,7 +391,7 @@ def test(args):
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(dim=-1)
+            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
             starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
 
             # Log info
