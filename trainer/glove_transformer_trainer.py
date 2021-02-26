@@ -29,6 +29,7 @@ import eval
 import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
+from torchinfo import summary
 
 
 def train(args):
@@ -74,6 +75,18 @@ def train(args):
     else:
         step = 0
     model = model.to(device)
+
+    log.info(
+        summary(
+            model,
+            input_size=(args.max_positions, args.batch_size),
+            dtypes=[torch.long],
+            batch_dim=1,
+            device=device,
+            depth=5,
+            verbose=2,
+        )
+    )
     model.train()
 
     # Get saver
@@ -122,7 +135,9 @@ def train(args):
                 optimizer.zero_grad()
 
                 batch_size = cw_idxs.size(0)
-                loss, loss_val, _ = forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model)
+                loss, loss_val, _ = forward(
+                    cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model
+                )
 
                 # Backward
                 scaler.scale(loss).backward()
@@ -215,7 +230,7 @@ def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast
         scores = model(x, padding_mask=padding_mask)
         y = torch.stack((y1, y2), dim=-1)
         y = y.to(device)
-        loss = model.get_loss(scores, y)
+        loss = model.module.get_loss(scores, y)
         loss_val = loss.item() * 2
 
     return loss, loss_val, scores
@@ -240,11 +255,13 @@ def evaluate(
     with torch.no_grad(), tqdm(total=len(data_loader.dataset)) as progress_bar:
         for cw_idxs, cc_idxs, qw_idxs, qc_idxs, y1, y2, ids in data_loader:
             batch_size = cw_idxs.size(0)
-            _, loss_val, scores = forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model)
+            _, loss_val, scores = forward(
+                cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model
+            )
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.get_prob(scores).transpose(0, 1).split(dim=-1)
+            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(dim=-1)
             starts, ends = util.discretize(p1, p2, max_len, use_squad_v2)
 
             # Log info
@@ -370,11 +387,13 @@ def test(args):
     with torch.no_grad(), tqdm(total=len(dataset)) as progress_bar:
         for cw_idxs, cc_idxs, qw_idxs, qc_idxs, y1, y2, ids in data_loader:
             batch_size = cw_idxs.size(0)
-            _, loss_val, scores = forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model)
+            _, loss_val, scores = forward(
+                cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model
+            )
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.get_prob(scores).transpose(0, 1).split(dim=-1)
+            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(dim=-1)
             starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
 
             # Log info
@@ -489,7 +508,7 @@ def add_train_test_args(parser):
     )
     parser.add_argument(
         "--activation",
-        choices=['relu', 'gelu'],
+        choices=["relu", "gelu"],
         default="gelu",
         help="Feedforward activation function.",
     )
