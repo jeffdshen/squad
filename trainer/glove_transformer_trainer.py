@@ -281,7 +281,7 @@ def add_train_args(parser):
         default=50000,
         help="Number of steps between successive evaluations.",
     )
-    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=1.5e-5, help="Learning rate.")
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
     parser.add_argument(
         "--num_epochs",
