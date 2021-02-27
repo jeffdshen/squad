@@ -11,7 +11,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torch.optim.lr_scheduler as sched
 import torch.utils.data as data
 import torch.cuda.amp as amp
 
@@ -29,6 +28,7 @@ import eval
 import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
+import trainer.scheduler as sched
 from torchinfo import summary
 
 
@@ -46,6 +46,25 @@ def train(args):
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
+
+    # Get data loader
+    log.info("Building dataset...")
+    train_dataset = SQuAD(args.train_record_file, args.use_squad_v2)
+    train_loader = data.DataLoader(
+        train_dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        collate_fn=collate_fn,
+    )
+    dev_dataset = SQuAD(args.dev_record_file, args.use_squad_v2)
+    dev_loader = data.DataLoader(
+        dev_dataset,
+        batch_size=args.batch_size,
+        shuffle=False,
+        num_workers=args.num_workers,
+        collate_fn=collate_fn,
+    )
 
     # Get embeddings
     log.info("Loading embeddings...")
@@ -98,25 +117,14 @@ def train(args):
 
     # Get optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), args.lr, weight_decay=args.l2_wd)
-    scheduler = sched.LambdaLR(optimizer, lambda s: 1.0)  # Constant LR
-
-    # Get data loader
-    log.info("Building dataset...")
-    train_dataset = SQuAD(args.train_record_file, args.use_squad_v2)
-    train_loader = data.DataLoader(
-        train_dataset,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        collate_fn=collate_fn,
-    )
-    dev_dataset = SQuAD(args.dev_record_file, args.use_squad_v2)
-    dev_loader = data.DataLoader(
-        dev_dataset,
-        batch_size=args.batch_size,
-        shuffle=False,
-        num_workers=args.num_workers,
-        collate_fn=collate_fn,
+    max_num_steps = args.num_epochs * (len(train_loader) + args.num_workers)
+    scheduler = sched.LinearWarmupPowerDecay(
+        optimizer,
+        0.0,
+        args.lr,
+        0.0,
+        int(max_num_steps * args.warmup_ratio),
+        max_num_steps,
     )
 
     # Train
@@ -144,7 +152,7 @@ def train(args):
                     nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
                     scaler.step(optimizer)
                     scaler.update()
-                    scheduler.step(step // batch_size)
+                    scheduler.step()
                     optimizer.zero_grad()
 
                 # Log info
@@ -307,11 +315,12 @@ def add_train_args(parser):
         default=128,
     )
     parser.add_argument("--lr", type=float, default=1.5e-5, help="Learning rate.")
+    parser.add_argument("--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps.")
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
     parser.add_argument(
         "--num_epochs",
         type=int,
-        default=30,
+        default=10,
         help="Number of epochs for which to train. Negative means forever.",
     )
     parser.add_argument(
