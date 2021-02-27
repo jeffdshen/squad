@@ -124,6 +124,7 @@ def train(args):
     steps_till_eval = args.eval_steps
     epoch = step // len(train_dataset)
     scaler = amp.GradScaler()
+    fwd_step = 0
 
     while epoch != args.num_epochs:
         epoch += 1
@@ -138,16 +139,16 @@ def train(args):
 
                 # Backward
                 scaler.scale(loss).backward()
-                if (step // args.batch_size + 1) % args.gradient_accumulation == 0:
+                if (fwd_step + 1) % args.gradient_accumulation == 0:
                     scaler.unscale_(optimizer)
                     nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
                     scaler.step(optimizer)
                     scaler.update()
                     scheduler.step(step // batch_size)
-                    tbx.add_scalar("train/backwards", 1, step + batch_size)
                     optimizer.zero_grad()
 
                 # Log info
+                fwd_step += 1
                 step += batch_size
                 progress_bar.update(batch_size)
                 progress_bar.set_postfix(epoch=epoch, NLL=loss_val)
