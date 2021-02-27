@@ -138,7 +138,7 @@ def train(args):
 
                 # Backward
                 scaler.scale(loss).backward()
-                if (step + 1) % batch_size == 0:
+                if (step // batch_size + 1) % args.gradient_accumulation == 0:
                     scaler.unscale_(optimizer)
                     nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
                     scaler.step(optimizer)
