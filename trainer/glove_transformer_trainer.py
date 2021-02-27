@@ -130,20 +130,21 @@ def train(args):
         log.info(f"Starting epoch {epoch}...")
         with torch.enable_grad(), tqdm(total=len(train_loader.dataset)) as progress_bar:
             for cw_idxs, cc_idxs, qw_idxs, qc_idxs, y1, y2, ids in train_loader:
-                optimizer.zero_grad()
-
                 batch_size = cw_idxs.size(0)
                 loss, loss_val, _ = forward(
                     cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model
                 )
+                loss = loss / args.gradient_accumulation
 
                 # Backward
                 scaler.scale(loss).backward()
-                scaler.unscale_(optimizer)
-                nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
-                scaler.step(optimizer)
-                scaler.update()
-                scheduler.step(step // batch_size)
+                if (step + 1) % batch_size == 0:
+                    scaler.unscale_(optimizer)
+                    nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+                    scaler.step(optimizer)
+                    scaler.update()
+                    scheduler.step(step // batch_size)
+                    optimizer.zero_grad()
 
                 # Log info
                 step += batch_size
@@ -297,6 +298,11 @@ def add_train_args(parser):
         type=int,
         default=50000,
         help="Number of steps between successive evaluations.",
+    )
+    parser.add_argument(
+        "--gradient_accumulation",
+        type=int,
+        default=128,
     )
     parser.add_argument("--lr", type=float, default=1.5e-5, help="Learning rate.")
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
@@ -471,7 +477,7 @@ def add_train_test_args(parser):
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=64,
+        default=16,
         help="Batch size per GPU. Scales automatically when \
                               multiple GPUs are available.",
     )
