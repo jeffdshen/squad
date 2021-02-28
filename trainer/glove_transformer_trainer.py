@@ -236,17 +236,18 @@ def concat_example(c, q, padding_idx, max_positions):
     x_mask = x_range < c_len.unsqueeze(-1)
     c_mask = torch.arange(c.size(1), device=x.device).unsqueeze(0) < c_len.unsqueeze(-1)
     x[x_mask] = c[c_mask]
+    c_padding_mask = T.get_padding_mask(x)
 
     x_mask = (x_range < length.unsqueeze(-1)) & ~x_mask
     q_mask = torch.arange(q.size(1), device=x.device).unsqueeze(0) < q_len.unsqueeze(-1)
     x[x_mask] = q[q_mask]
 
-    return x
+    return x, c_padding_mask
 
 
 def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast=True):
     # Setup for forward
-    x = concat_example(cw_idxs, qw_idxs, padding_idx, args.max_positions)
+    x, c_padding_mask = concat_example(cw_idxs, qw_idxs, padding_idx, args.max_positions)
     x = x.transpose(0, 1)
     x = x.to(device)
     padding_mask = T.get_padding_mask(x, padding_idx)
@@ -254,8 +255,9 @@ def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast
     # Forward
     with amp.autocast(enabled=autocast):
         scores = model(x, padding_mask=padding_mask)
+        scores = model.module.mask_scores(scores, c_padding_mask)
         y = torch.stack((y1, y2), dim=-1)
-        y = y.clamp(max=args.max_positions - 1)
+        y = y.clamp(max=x.size(0) - 1)
         y = y.to(device)
         loss = model.module.get_loss(scores, y)
         loss_val = loss.item() * 2

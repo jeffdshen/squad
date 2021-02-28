@@ -47,7 +47,6 @@ class GloveTransformerQA(nn.Module):
         )
         self.head = T.LinearQAHead(dim=dim, output_logits=2)
 
-
     # (S, N), (S, N), (N, S) -> (S, N, 2)
     @amp.autocast()
     def forward(self, x, positions=None, padding_mask=None):
@@ -58,11 +57,13 @@ class GloveTransformerQA(nn.Module):
         x = self.head(x)
         return x
 
+    # (S, N, 2), (N, S) -> (S, N, 2)
+    def mask_scores(self, x, padding_mask):
+        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
 
     # (S, N, 2) -> (S, N, 2)
     def get_log_prob(self, x):
         return F.log_softmax(x, dim=0)
-
 
     # (S, N, 2) -> (S, N, 2)
     def get_prob(self, x):
@@ -71,4 +72,3 @@ class GloveTransformerQA(nn.Module):
     # (S, N, 2), (N, 2) -> (1, )
     def get_loss(self, scores, y):
         return self.head.get_loss(scores, y)
-
