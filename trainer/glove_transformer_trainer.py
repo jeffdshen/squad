@@ -258,7 +258,7 @@ def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast
         scores = model(x, padding_mask=padding_mask)
         scores = model.module.mask_scores(scores, c_padding_mask)
         y = torch.stack((y1, y2), dim=-1)
-        y = y.minimum(c_len - 1)
+        y = y.minimum((c_len - 1).unsqueeze(-1))
         y = y.to(device)
         loss = model.module.get_loss(scores, y)
         loss_val = loss.item() * 2
