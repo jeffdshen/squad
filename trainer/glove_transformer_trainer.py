@@ -236,7 +236,7 @@ def concat_example(c, q, padding_idx, max_positions):
     x_mask = x_range < c_len.unsqueeze(-1)
     c_mask = torch.arange(c.size(1), device=x.device).unsqueeze(0) < c_len.unsqueeze(-1)
     x[x_mask] = c[c_mask]
-    c_padding_mask = T.get_padding_mask(x)
+    c_padding_mask = T.get_padding_mask(x, padding_idx)
 
     x_mask = (x_range < length.unsqueeze(-1)) & ~x_mask
     q_mask = torch.arange(q.size(1), device=x.device).unsqueeze(0) < q_len.unsqueeze(-1)
