@@ -350,9 +350,6 @@ def add_train_args(parser):
         default=False,
         help="Whether the decay should reach end_lr at the end of training, or in the limit to infinity",
     )
-    parser.add_argument(
-        "--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps."
-    )
 
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
     parser.add_argument(
