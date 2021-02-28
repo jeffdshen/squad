@@ -218,7 +218,7 @@ def train(args):
                     )
 
 
-# (N, C) + (N, Q) -> (N, S)
+# (N, C) + (N, Q) -> (N, S), (N, S), (N,)
 def concat_example(c, q, padding_idx, max_positions):
     c_len = (c != padding_idx).sum(dim=1)
     q_len = (q != padding_idx).sum(dim=1)
@@ -242,12 +242,12 @@ def concat_example(c, q, padding_idx, max_positions):
     q_mask = torch.arange(q.size(1), device=x.device).unsqueeze(0) < q_len.unsqueeze(-1)
     x[x_mask] = q[q_mask]
 
-    return x, c_padding_mask
+    return x, c_padding_mask, c_len
 
 
 def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast=True):
     # Setup for forward
-    x, c_padding_mask = concat_example(cw_idxs, qw_idxs, padding_idx, args.max_positions)
+    x, c_padding_mask, c_len = concat_example(cw_idxs, qw_idxs, padding_idx, args.max_positions)
     x = x.transpose(0, 1)
     x = x.to(device)
     c_padding_mask = c_padding_mask.to(device)
@@ -258,7 +258,7 @@ def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast
         scores = model(x, padding_mask=padding_mask)
         scores = model.module.mask_scores(scores, c_padding_mask)
         y = torch.stack((y1, y2), dim=-1)
-        y = y.clamp(max=x.size(0) - 1)
+        y = y.minimum(c_len - 1)
         y = y.to(device)
         loss = model.module.get_loss(scores, y)
         loss_val = loss.item() * 2
