@@ -19,9 +19,10 @@ class LRScheduler:
 
 
 class PowerScheduler(LRScheduler):
-    """Uses a power function a * x^power + b, such that it equals the start_lr at 0
-    and the end_lr at max_num_steps. Afterwards, returns the end_lr forever.
+    """Uses a power function a * x^power + b, such that it equals the start_lr at start_step
+    and the end_lr at end_step. Afterwards, returns the end_lr forever.
     Automatically steps the first step if take_initial_step is True.
+    If take_last_step is True, step returns True only after end_step.
     """
 
     def __init__(
@@ -29,19 +30,23 @@ class PowerScheduler(LRScheduler):
         optimizer,
         start_lr,
         end_lr,
-        max_num_steps,
+        start_step,
+        end_step,
         power=1,
         take_initial_step=True,
+        take_last_step=True,
     ):
         super().__init__(optimizer)
         self.start_lr = start_lr
         self.end_lr = end_lr
-        self.max_num_steps = max_num_steps
+        self.end_step = end_step if end_step > 0 else float("inf")
         self.power = power
 
-        self.step_count = 0
+        self.step_count = start_step - 1
         self.last_lr = start_lr
-        self.multiplier = (end_lr - start_lr) / (max_num_steps ** power)
+        self.multiplier = (end_lr - start_lr) / (self.end_step ** power - start_step ** power)
+        self.constant = start_lr - self.multiplier * (start_step ** power)
+        self.take_last_step = take_last_step
 
         if take_initial_step:
             self.step()
@@ -50,10 +55,10 @@ class PowerScheduler(LRScheduler):
         return self.last_lr
 
     def get_lr(self):
-        if self.step_count >= self.max_num_steps:
+        if self.step_count >= self.end_step:
             return self.end_lr
 
-        return self.multiplier * (self.step_count ** self.power) + self.start_lr
+        return self.multiplier * (self.step_count ** self.power) + self.constant
 
     def step(self):
         self.step_count += 1
@@ -61,7 +66,9 @@ class PowerScheduler(LRScheduler):
         for param_group in self.optimizer.param_groups:
             param_group["lr"] = lr
         self.last_lr = lr
-        if self.step_count >= self.max_num_steps:
+
+    
+        if self.step_count >= self.end_step - (not self.take_last_step):
             return True
         return False
 
@@ -95,7 +102,7 @@ class ConcatScheduler(LRScheduler):
         done = self.schedulers[self.index].step()
         self.last_lr = self.schedulers[self.index].get_last_lr()
         if done:
-            if self.index < len(self.schedulers):
+            if self.index + 1 < len(self.schedulers):
                 self.index += 1
             else:
                 return True
@@ -114,23 +121,28 @@ class LinearWarmupPowerDecay(ConcatScheduler):
         max_num_steps,
         power=1,
         take_initial_step=True,
+        take_last_step=True
     ):
         schedulers = [
             PowerScheduler(
                 optimizer,
                 start_lr,
                 peak_lr,
+                1,
                 warmup_steps,
                 power=1,
                 take_initial_step=take_initial_step,
+                take_last_step=False,
             ),
             PowerScheduler(
                 optimizer,
                 peak_lr,
                 end_lr,
-                max_num_steps - warmup_steps,
+                warmup_steps,
+                max_num_steps,
                 power=power,
                 take_initial_step=False,
+                take_last_step=take_last_step,
             ),
         ]
 

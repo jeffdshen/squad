@@ -117,14 +117,29 @@ def train(args):
 
     # Get optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), args.lr, weight_decay=args.l2_wd)
-    max_num_steps = args.num_epochs * (len(train_loader) + args.num_workers)
+    if args.num_epochs < 0:
+        max_num_steps = (
+            len(train_loader) + args.num_workers
+        ) // args.gradient_accumulation
+    else:
+        max_num_steps = (
+            args.num_epochs
+            * (len(train_loader) + args.num_workers)
+            // args.gradient_accumulation
+        )
+
+    warmup_steps = int(max_num_steps * args.warmup_ratio)
+    if args.decay_forever:
+        max_num_steps = -1
+
     scheduler = sched.LinearWarmupPowerDecay(
         optimizer,
-        0.0,
+        args.start_lr,
         args.lr,
-        0.0,
-        int(max_num_steps * args.warmup_ratio),
+        args.end_lr,
+        warmup_steps,
         max_num_steps,
+        power=args.power_decay,
     )
 
     # Train
@@ -315,7 +330,28 @@ def add_train_args(parser):
         default=128,
     )
     parser.add_argument("--lr", type=float, default=1.5e-5, help="Learning rate.")
-    parser.add_argument("--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps.")
+    parser.add_argument(
+        "--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps."
+    )
+    parser.add_argument(
+        "--power_decay", type=float, default=1, help="Power of the decay."
+    )
+    parser.add_argument(
+        "--start_lr", type=float, default=1e-8, help="Starting learning rate."
+    )
+    parser.add_argument(
+        "--end_lr", type=float, default=1e-8, help="Ending learning rate."
+    )
+    parser.add_argument(
+        "--decay_forever",
+        type=lambda s: s.lower().startswith("t"),
+        default=False,
+        help="Whether the decay should reach end_lr at the end of training, or in the limit to infinity",
+    )
+    parser.add_argument(
+        "--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps."
+    )
+
     parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
     parser.add_argument(
         "--num_epochs",
