@@ -31,7 +31,20 @@ class PretrainedTokenEmbedding(nn.Module):
 
 
 class LearnedTokenEmbedding(nn.Module):
-    pass
+    """Learned token embedding
+
+    Args:
+        num_words (int): Vocab size
+        embed_dim (int): Output size of the embedding
+    """
+
+    def __init__(self, num_words, embed_dim):
+        super().__init__()
+        self.embed = nn.Embedding(num_words, embed_dim)
+
+    def forward(self, x):
+        emb = self.embed(x)
+        return emb
 
 
 class SinusoidalPositionalEmbedding(nn.Module):
