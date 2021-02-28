@@ -95,6 +95,7 @@ def train(args):
         step = 0
     model = model.to(device)
 
+    log.info(model)
     log.info(
         summary(
             model,
@@ -102,6 +103,7 @@ def train(args):
             dtypes=[torch.long],
             device=device,
             depth=5,
+            verbose=0,
         )
     )
     model.train()
