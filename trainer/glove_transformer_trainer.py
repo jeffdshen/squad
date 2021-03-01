@@ -22,7 +22,7 @@ from tqdm import tqdm
 from ujson import load as json_load
 from os.path import join
 
-from models import GloveTransformerQA
+from models import GloveTransformerQA, WordTransformerQA
 from datasets.squad import collate_fn, SQuAD
 import eval
 import trainer.util as util
@@ -75,7 +75,7 @@ def train(args):
 
     # Get model
     log.info("Building model...")
-    model = GloveTransformerQA(
+    model = WordTransformerQA(
         dim=args.dim,
         n_heads=args.n_heads,
         ff_dim=args.ff_dim,
@@ -401,7 +401,7 @@ def test(args):
 
     # Get model
     log.info("Building model...")
-    model = GloveTransformerQA(
+    model = WordTransformerQA(
         dim=args.dim,
         n_heads=args.n_heads,
         ff_dim=args.ff_dim,
