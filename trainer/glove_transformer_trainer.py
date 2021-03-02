@@ -118,7 +118,13 @@ def train(args):
     )
 
     # Get optimizer and scheduler
-    optimizer = optim.Adam(model.parameters(), args.lr, weight_decay=args.l2_wd)
+    optimizer = optim.AdamW(
+        model.parameters(),
+        args.lr,
+        betas=(args.beta_1, args.beta_2),
+        eps=args.eps,
+        weight_decay=args.l2_wd,
+    )
     if args.num_epochs < 0:
         max_num_steps = (
             len(train_loader) + args.num_workers
@@ -247,7 +253,9 @@ def concat_example(c, q, padding_idx, max_positions):
 
 def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast=True):
     # Setup for forward
-    x, c_padding_mask, c_len = concat_example(cw_idxs, qw_idxs, padding_idx, args.max_positions)
+    x, c_padding_mask, c_len = concat_example(
+        cw_idxs, qw_idxs, padding_idx, args.max_positions
+    )
     x = x.transpose(0, 1)
     x = x.to(device)
     c_padding_mask = c_padding_mask.to(device)
@@ -354,7 +362,10 @@ def add_train_args(parser):
         help="Whether the decay should reach end_lr at the end of training, or in the limit to infinity",
     )
 
-    parser.add_argument("--l2_wd", type=float, default=0, help="L2 weight decay.")
+    parser.add_argument("--l2_wd", type=float, default=0, help="AdamW weight decay.")
+    parser.add_argument("--eps", type=float, default=1e-6, help="Adam epsilon.")
+    parser.add_argument("--beta_1", type=float, default=0.9, help="Adam beta_1.")
+    parser.add_argument("--beta_2", type=float, default=0.98, help="Adam beta_2.")
     parser.add_argument(
         "--num_epochs",
         type=int,
