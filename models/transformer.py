@@ -36,11 +36,12 @@ class LearnedTokenEmbedding(nn.Module):
     Args:
         num_words (int): Vocab size
         embed_dim (int): Output size of the embedding
+        padding_idx (int): Padding index
     """
 
-    def __init__(self, num_words, embed_dim):
+    def __init__(self, num_words, embed_dim, padding_idx):
         super().__init__()
-        self.embed = nn.Embedding(num_words, embed_dim)
+        self.embed = nn.Embedding(num_words, embed_dim, padding_idx)
 
     def forward(self, x):
         emb = self.embed(x)

@@ -90,7 +90,7 @@ class WordTransformerQA(nn.Module):
     ):
         super().__init__()
         self.embed = T.TransformerEncoderEmbedding(
-            T.LearnedTokenEmbedding(word_vectors.size(0), dim),
+            T.LearnedTokenEmbedding(word_vectors.size(0), dim, 0),
             T.LearnedPositionalEmbedding(max_positions, dim),
             dim=dim,
             dropout=dropout,
