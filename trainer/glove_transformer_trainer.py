@@ -362,7 +362,7 @@ def add_train_args(parser):
         help="Whether the decay should reach end_lr at the end of training, or in the limit to infinity",
     )
 
-    parser.add_argument("--l2_wd", type=float, default=0, help="AdamW weight decay.")
+    parser.add_argument("--l2_wd", type=float, default=0.01, help="AdamW weight decay.")
     parser.add_argument("--eps", type=float, default=1e-6, help="Adam epsilon.")
     parser.add_argument("--beta_1", type=float, default=0.9, help="Adam beta_1.")
     parser.add_argument("--beta_2", type=float, default=0.98, help="Adam beta_2.")
