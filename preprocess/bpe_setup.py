@@ -96,7 +96,9 @@ def build_features(examples, data_type, out_file):
     ques_limit = max(len(example["ques_tokens"]) for example in examples)
 
     total = 0
-    meta = {"context_lengths": [], "ques_lengths": []}
+    meta = {}
+    context_lengths = []
+    ques_lengths = []
     context_idxs = []
     ques_idxs = []
     y1s = []
@@ -112,10 +114,12 @@ def build_features(examples, data_type, out_file):
         for i, token in enumerate(example["context_tokens"]):
             context_idx[i] = token
         context_idxs.append(context_idx)
+        context_lengths.append(len(example["context_tokens"]))
 
         for i, token in enumerate(example["ques_tokens"]):
             ques_idx[i] = token
         ques_idxs.append(ques_idx)
+        ques_lengths.append(len(example["ques_lengths"]))
 
         if is_answerable(example):
             start, end = example["y1s"][-1], example["y2s"][-1]
@@ -136,6 +140,8 @@ def build_features(examples, data_type, out_file):
     )
     print(f"Built {total} instances of features in total")
     meta["total"] = total
+    meta["context_lengths"] = context_lengths
+    meta["ques_lengths"] = ques_lengths
     return meta
 
 
