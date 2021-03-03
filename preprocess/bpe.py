@@ -63,8 +63,11 @@ class BPE:
     def load_state_dict(self, state_dict):
         self.special_tokens = state_dict["special_tokens"]
         self.vocab = state_dict["vocab"]
+        self.vocab = [(tuple(word), count) for word, count in self.vocab]
         self.merges = state_dict["merges"]
+        self.merges = [(tuple(pair), num, count) for pair, num, count in self.merges]
         self.encoded_vocab = state_dict["encoded_vocab"]
+        self.encoded_vocab = [(tuple(word), count) for word, count in self.encoded_vocab]
         if self.special_tokens is not None:
             self._build_base_vocab()
 
