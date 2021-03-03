@@ -24,12 +24,12 @@ def main():
     util.add_data_args(parent_parser)
 
     subparsers = parser.add_subparsers()
+
     bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
     bidaf_setup.add_args(bidaf)
     bidaf.set_defaults(setup=bidaf_setup.setup)
     bidaf.set_defaults(data_sub_dir="bidaf")
 
-    subparsers = parser.add_subparsers()
     bpe = subparsers.add_parser("bpe", parents=[parent_parser])
     bpe_setup.add_args(bpe)
     bpe.set_defaults(setup=bpe_setup.setup)
