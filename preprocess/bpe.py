@@ -50,8 +50,8 @@ class BPE:
     def encode(self, line):
         return self.encoder.encode(line)
 
-    def decode(self, words):
-        return self.encoder.decode(words)
+    def decode(self, tokens):
+        return self.encoder.decode(tokens)
 
     def state_dict(self):
         return {
@@ -82,11 +82,12 @@ class Encoder:
     def encode(self, line):
         words = self.tokenizer.tokenize(line)
         words = [self.code.encode(word) for word in words]
-        return words
+        tokens = [token for word in words for token in word]
+        return tokens
 
-    def decode(self, words):
-        words = [self.code.decode(word) for word in words]
-        line = self.tokenizer.detokenize(words)
+    def decode(self, tokens):
+        tokens = self.code.decode(tokens)
+        line = self.tokenizer.detokenize(tokens)
         return line
 
 
@@ -151,9 +152,9 @@ class Code:
                 break
         return word
 
-    def decode(self, word):
+    def decode(self, tokens):
         result = []
-        for token in word:
+        for token in tokens:
             if token in self.unmerge_dict:
                 result += self.unmerge_dict[token]
             else:
@@ -174,9 +175,11 @@ class BaseVocab:
             self.base_vocab.append(token)
 
     def encode(self, token):
+        """tuple of bytes -> int token"""
         return self.base_dict[token]
 
     def decode(self, token):
+        """int token -> tuple of bytes"""
         return self.base_vocab[token]
 
     def __len__(self):
@@ -192,15 +195,17 @@ class Tokenizer:
         self.base_vocab = base_vocab
 
     def tokenize(self, line):
+        """unicode -> list of words of base_vocab tokens"""
         words = line.strip().split()
         words = [tuple((word + " ").encode("utf-8", "ignore")) for word in words]
-        words = [tuple(self.base_vocab.encode((ind,)) for ind in word) for word in words]
+        words = [
+            tuple(self.base_vocab.encode((ind,)) for ind in word) for word in words
+        ]
         return words
 
-    def detokenize(self, words):
-        words = [
-            bytes(x for ind in word for x in self.base_vocab.decode(ind))
-            for word in words
-        ]
-        words = [word.decode("utf-8", "ignore") for word in words]
+    def detokenize(self, tokens):
+        """Flat (!) list of tokens -> unicode"""
+
+        words = bytes(x for token in tokens for x in self.base_vocab.decode(token))
+        words = words.decode("utf-8", "ignore")
         return "".join(words).strip()
