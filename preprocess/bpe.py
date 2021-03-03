@@ -5,7 +5,6 @@ Author:
 """
 
 import collections
-from ujson import decode
 import preprocess.bpe_utils as bpe_utils
 
 
