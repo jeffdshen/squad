@@ -36,9 +36,9 @@ class BPE:
     def build_vocab(self, lines):
         self.vocab = bpe_utils.get_vocab_from_dict(lines, self.tokenizer)
 
-    def learn_bpe(self, max_length, block_size=256):
+    def learn_bpe(self, max_length, l1_bs=16, l2_bs=256):
         self.merges, self.encoded_vocab = bpe_utils.learn_bpe(
-            self.vocab, max_length, self.base_vocab, block_size
+            self.vocab, max_length, self.base_vocab, l1_bs=l1_bs, l2_bs=l2_bs
         )
         self._build_encoder()
 
