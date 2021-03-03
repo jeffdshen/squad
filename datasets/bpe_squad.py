@@ -18,7 +18,8 @@ class MLM(data.Dataset):
 
     Args:
         data_path (str): Path to .npz file containing pre-processed dataset.
-        max_tokens (int): Range of indices to generate for the random tokens
+        max_tokens (int): Range of indices to generate for the random tokens.
+            It is also the ignore_index for y values.
     """
 
     def __init__(
@@ -50,7 +51,7 @@ class MLM(data.Dataset):
         self.context_idxs = torch.from_numpy(dataset["context_idxs"]).long()
         self.question_idxs = torch.from_numpy(dataset["ques_idxs"]).long()
 
-    def get_mask(self, x):
+    def mask(self, x, y):
         size = x.size(0)
         num_mask = int(self.mask_prob * size + random.random())
         masks = torch.tensor(random.sample(range(size), num_mask), dtype=torch.long)
@@ -59,12 +60,17 @@ class MLM(data.Dataset):
         random_mask = change_masks < (self.randomize_prob + self.unmask_prob)
         random_mask = random_mask & (~unmask)
         random_content = torch.randint(
-            self.max_tokens, random_mask.size(), dtype=torch.long
+            self.max_tokens, (random_mask.sum().item(),), dtype=torch.long
         )
+
+        masked = torch.tensor([False] * size, dtype=torch.bool)
+        masked[masks] = True
 
         x[masks[~unmask]] = self.mask_idx
         x[masks[random_mask]] = random_content
-        return x
+        y[~masked] = self.max_tokens
+
+        return x, y
 
     def __iter__(self):
         next = torch.full((self.block_size,), self.padding_idx, dtype=torch.long)
@@ -96,7 +102,7 @@ class MLM(data.Dataset):
                     if next_index >= next.size(0):
                         x = next.clone().detach()
                         y = next.clone().detach()
-                        yield self.get_mask(x), y
+                        yield self.mask(x, y)
                         next = torch.full(
                             (self.block_size,), self.padding_idx, dtype=torch.long
                         )
