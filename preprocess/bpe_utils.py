@@ -83,10 +83,15 @@ def subtract_counters(counter_a, counter_b):
 
 
 def merge_vocab(vocab, best, num, pairs, cache, block_size):
+    hit = 0
+    miss = 0
     for ind in range(0, len(vocab), block_size):
         c = cache[ind // block_size]
         if best not in c or c[best] == 0:
+            hit += 1
             continue
+
+        miss += 1
 
         for v in range(ind, min(len(vocab), ind + block_size)):
             word, count = vocab[v]
@@ -105,6 +110,8 @@ def merge_vocab(vocab, best, num, pairs, cache, block_size):
 
             vocab[v] = (next, count)
 
+    return hit, miss
+
 
 def learn_bpe(vocab, max_length, base_vocab, block_size=256):
     """Performs bpe and returns the merge list.
@@ -118,11 +125,13 @@ def learn_bpe(vocab, max_length, base_vocab, block_size=256):
     merges = []
     pairs, cache = get_stats(vocab, block_size)
 
-    for i in tqdm(range(last, max_length)):
+    pbar = tqdm(range(last, max_length))
+    for i in pbar:
         if len(pairs) == 0:
             break
         best = pairs.most_common(1)[0][0]
         merges.append((best, i, pairs[best]))
-        merge_vocab(vocab, best, i, pairs, cache, block_size)
+        hit, miss = merge_vocab(vocab, best, i, pairs, cache, block_size)
+        pbar.set_postfix({"hit": hit, "miss": miss})
 
     return merges, vocab
