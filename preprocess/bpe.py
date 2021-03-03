@@ -52,11 +52,6 @@ class BPE:
     def decode(self, tokens):
         return self.encoder.decode(tokens)
 
-    def get_spans(self, tokens, line):
-        chars = enumerate(line)
-        chars = line.
-
-
     def state_dict(self):
         return {
             "special_tokens": self.special_tokens,
