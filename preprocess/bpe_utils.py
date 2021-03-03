@@ -21,6 +21,7 @@ import collections
 import copy
 from tqdm import tqdm
 
+
 def get_vocab_from_dict(lines, tokenizer):
     """Gets a vocab from a dict of lines to their count.
 
@@ -39,16 +40,20 @@ def get_vocab_from_dict(lines, tokenizer):
     return vocab
 
 
-def get_stats(vocab, block_size):
+def get_stats(vocab, l1_block_size, l2_block_size):
     pairs = collections.Counter()
-    cache = []
+    l1 = []
+    l2 = []
     for ind, (word, count) in enumerate(vocab):
-        if ind % block_size == 0:
-            cache.append(collections.Counter())
-        add_stats_for_word(word, count, cache[-1])
-    for block in cache:
+        if ind % l1_block_size == 0:
+            l1.append(collections.Counter())
+        if ind % l2_block_size == 0:
+            l2.append(collections.Counter())
+        add_stats_for_word(word, count, l1[-1])
+        add_stats_for_word(word, count, l2[-1])
+    for block in l1:
         pairs.update(block)
-    return pairs, cache
+    return pairs, l1, l2
 
 
 def add_stats_for_word(word, count, counter):
@@ -82,38 +87,54 @@ def subtract_counters(counter_a, counter_b):
             del counter_a[k]
 
 
-def merge_vocab(vocab, best, num, pairs, cache, block_size):
-    hit = 0
-    miss = 0
-    for ind in range(0, len(vocab), block_size):
-        c = cache[ind // block_size]
-        if best not in c or c[best] == 0:
-            hit += 1
+def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
+    hit1 = 0
+    miss1 = 0
+    hit2 = 0
+    miss2 = 0
+    for i in range(0, len(vocab), l2_bs):
+        c2 = l2[i // l2_bs]
+        hit2 += 1
+        if best not in c2:
             continue
+        if c2[best] == 0:
+            continue
+        
+        hit2 -= 1
+        miss2 += 1
 
-        miss += 1
-
-        for v in range(ind, min(len(vocab), ind + block_size)):
-            word, count = vocab[v]
-
-            if not contains_pair(word, best):
+        for j in range(i, min(len(vocab), i + l2_bs), l1_bs):
+            c1 = l1[i // l1_bs]
+            hit1 += 1
+            if best not in c1:
                 continue
+            if c1[best] == 0:
+                continue
+            hit1 -= 1
+            miss1 += 1
 
-            diff = collections.Counter()
-            add_stats_for_word(word, count, diff)
-            next = replace_pair(word, best, num)
-            sub = collections.Counter()
-            add_stats_for_word(next, count, sub)
-            subtract_counters(diff, sub)
-            subtract_counters(c, diff)
-            subtract_counters(pairs, diff)
+            for v in range(j, min(len(vocab), j + l1_bs), 1):
+                word, count = vocab[v]
 
-            vocab[v] = (next, count)
+                if not contains_pair(word, best):
+                    continue
 
-    return hit, miss
+                diff = collections.Counter()
+                add_stats_for_word(word, count, diff)
+                next = replace_pair(word, best, num)
+                sub = collections.Counter()
+                add_stats_for_word(next, count, sub)
+                subtract_counters(diff, sub)
+                subtract_counters(l1, diff)
+                subtract_counters(l2, diff)
+                subtract_counters(pairs, diff)
+
+                vocab[v] = (next, count)
+
+    return hit1, miss1, hit2, miss2
 
 
-def learn_bpe(vocab, max_length, base_vocab, block_size=256):
+def learn_bpe(vocab, max_length, base_vocab, l1_block_size=16, l2_block_size=256):
     """Performs bpe and returns the merge list.
 
     Returns:
@@ -123,7 +144,7 @@ def learn_bpe(vocab, max_length, base_vocab, block_size=256):
     vocab = copy.deepcopy(vocab)
     last = len(base_vocab)
     merges = []
-    pairs, cache = get_stats(vocab, block_size)
+    pairs, l1, l2 = get_stats(vocab, l1_block_size, l2_block_size)
 
     pbar = tqdm(range(last, max_length))
     for i in pbar:
@@ -131,7 +152,9 @@ def learn_bpe(vocab, max_length, base_vocab, block_size=256):
             break
         best = pairs.most_common(1)[0][0]
         merges.append((best, i, pairs[best]))
-        hit, miss = merge_vocab(vocab, best, i, pairs, cache, block_size)
-        pbar.set_postfix({"hit": hit, "miss": miss})
+        hit1, miss1, hit2, miss2 = merge_vocab(
+            vocab, best, i, pairs, l1, l2, l1_block_size, l2_block_size
+        )
+        pbar.set_postfix({"hit2": hit2, "miss2": miss2, "hit1": hit1, "miss1": miss1, "pairs": len(pairs)})
 
     return merges, vocab
