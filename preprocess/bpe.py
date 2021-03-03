@@ -232,7 +232,7 @@ class Tokenizer:
             word.append((word[-1][0], " "))
     
         chars = [x for word in words for x in word]
-        chars = [(ind, self.base_vocab.encode(by,)) for ind, ch in chars for by in ch.decode("utf-8")]
+        chars = [(ind, self.base_vocab.encode(by,)) for ind, ch in chars for by in ch.encode("utf-8")]
         return chars
 
     def detokenize(self, tokens):
