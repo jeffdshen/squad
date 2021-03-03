@@ -146,23 +146,23 @@ def learn_bpe(vocab, max_length, base_vocab, l1_bs=16, l2_bs=256):
     merges = []
     pairs, l1, l2 = get_stats(vocab, l1_bs, l2_bs)
 
-    pbar = tqdm(range(last, max_length))
-    for i in pbar:
-        if len(pairs) == 0:
-            break
-        best = pairs.most_common(1)[0][0]
-        merges.append((best, i, pairs[best]))
-        hit1, miss1, hit2, miss2 = merge_vocab(
-            vocab, best, i, pairs, l1, l2, l1_bs, l2_bs
-        )
-        pbar.set_postfix(
-            {
-                "hit2": hit2,
-                "miss2": miss2,
-                "hit1": hit1,
-                "miss1": miss1,
-                "pairs": len(pairs),
-            }
-        )
+    with tqdm(range(last, max_length)) as pbar:
+        for i in pbar:
+            if len(pairs) == 0:
+                break
+            best = pairs.most_common(1)[0][0]
+            merges.append((best, i, pairs[best]))
+            hit1, miss1, hit2, miss2 = merge_vocab(
+                vocab, best, i, pairs, l1, l2, l1_bs, l2_bs
+            )
+            pbar.set_postfix(
+                {
+                    "hit2": hit2,
+                    "miss2": miss2,
+                    "hit1": hit1,
+                    "miss1": miss1,
+                    "pairs": len(pairs),
+                }
+            )
 
     return merges, vocab
