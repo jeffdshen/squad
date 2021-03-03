@@ -19,8 +19,57 @@ Author:
 
 import collections
 import copy
+import heapq
 from tqdm import tqdm
 
+class TopCounter:
+    """Counter, but O(log n)ish to get the top element"""
+
+    def __init__(self):
+        self.counter = collections.Counter()
+        self.heap = []
+
+    def update(self, counter):
+        self.counter.update(counter)
+        for k in counter:
+            if k in self.counter and self.counter[k] == 0:
+                del self.counter[k]
+
+            if k in self.counter:
+                heapq.heappush(self.heap, (-self.counter[k], k))
+        
+        
+    def subtract(self, counter):
+        self.counter.subtract(counter)
+        for k in counter:
+            if k in self.counter and self.counter[k] == 0:
+                del self.counter[k]
+
+            if k in self.counter:
+                heapq.heappush(self.heap, (-self.counter[k], k))
+
+    def __len__(self):
+        return len(self.counter)
+
+    def pop(self):
+        while len(self.heap) > 0:
+            count, k = heapq.heappop(self.heap)
+            count = -count
+            if k not in self.counter:
+                continue
+
+            if self.counter[k] == 0:
+                raise RuntimeError("Wtf! Invariant violated")
+
+            # Make sure still valid
+            if self.counter[k] != count:
+                continue
+
+            return k, count
+
+        return None, None
+    
+        
 
 def get_vocab_from_dict(lines, tokenizer):
     """Gets a vocab from a dict of lines to their count.
@@ -41,7 +90,7 @@ def get_vocab_from_dict(lines, tokenizer):
 
 
 def get_stats(vocab, l1_block_size, l2_block_size):
-    pairs = collections.Counter()
+    pairs = TopCounter()
     l1 = []
     l2 = []
     for ind, (word, count) in enumerate(vocab):
@@ -127,7 +176,7 @@ def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
                 subtract_counters(diff, sub)
                 subtract_counters(c1, diff)
                 subtract_counters(c2, diff)
-                subtract_counters(pairs, diff)
+                pairs.subtract(diff)
 
                 vocab[v] = (next, count)
 
@@ -150,8 +199,11 @@ def learn_bpe(vocab, max_length, base_vocab, l1_bs=16, l2_bs=256):
         for i in pbar:
             if len(pairs) == 0:
                 break
-            best = pairs.most_common(1)[0][0]
-            merges.append((best, i, pairs[best]))
+            best, count = pairs.pop()
+            if best == None:
+                raise RuntimeError("Never should happen!")
+
+            merges.append((best, i, count))
             hit1, miss1, hit2, miss2 = merge_vocab(
                 vocab, best, i, pairs, l1, l2, l1_bs, l2_bs
             )
