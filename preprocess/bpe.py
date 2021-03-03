@@ -1,185 +1,206 @@
-"""Implementation of (byte-level) bpe.
-
-The tokenizer splits by spaces to construct a vocabulary. All words then use space
-as an end of word symbol. All words are encoded to bytes via utf-8, after which
-bpe can be applied.
-
-The implementation uses a cache for blocks of words to quickly filter out blocks
-without specific pairs.
+"""Interface for (byte-level) bpe. See bpe_utils.py for implementation details.
 
 Author:
     Jeffrey Shen
 """
 
 import collections
+from ujson import decode
+import preprocess.bpe_utils as bpe_utils
 
 
-def get_vocab_from_dict(lines, special_tokens):
-    """Gets a vocab from a dict of lines to their count.
-    
-    Returns:
-        vocab (list): (word as a tuple of int, count), sorted descending by count
-        base_vocab (list): byte strings for each token
-    """
-    vocab = collections.Counter()
-
-    for line, count in lines.items():
-        words = line.strip().split()
-        words = [tuple((word + " ").encode()) for word in words]
-        for word in words:
-            vocab[word] += count
-
-    base_vocab = [token.encode() for token in special_tokens]
-    vocab = list(vocab.items())
-    vocab = [
-        (tuple(c + len(special_tokens) for c in word), count) for (word, count) in vocab
-    ]
-    vocab.sort(lambda k: k[1], reverse=True)
-    for x in range(256):
-        base_vocab.append(bytes([x]))
-
-    return vocab, base_vocab
-
-
-def get_vocab_from_file(filename, special_tokens):
+def get_lines_from_file(filename):
     with open(filename, encoding="utf-8") as file:
         lines = collections.Counter(file.readlines())
-    return get_vocab_from_dict(lines, special_tokens)
+    return lines
 
 
-def get_stats(vocab, block_size):
-    pairs = collections.Counter()
-    cache = []
-    for ind, (word, count) in enumerate(vocab):
-        if ind % block_size == 0:
-            cache.append(collections.Counter())
-        add_stats_for_word(word, count, cache[-1])
-    for block in cache:
-        pairs.update(block)
-    return pairs, cache
+class BPE:
+    def __init__(self):
+        super().__init__()
+        self.special_tokens = None
+        self.base_vocab = None
+        self.tokenizer = None
+        self.vocab = None
+        self.merges = None
+        self.encoded_vocab = None
+        self.code = None
+
+    def build_base_vocab(self, special_tokens=["[PAD]", "[CLS]", "[SEP]", "[MASK]"]):
+        self.special_tokens = special_tokens
+        self._build_base_vocab()
+
+    def _build_base_vocab(self):
+        self.base_vocab = BaseVocab(self.special_tokens)
+        self.tokenizer = Tokenizer(self.base_vocab)
+
+    def build_vocab(self, lines):
+        self.vocab = bpe_utils.get_vocab_from_dict(lines, self.tokenizer)
+
+    def learn_bpe(self, max_length, block_size=256):
+        self.merges, self.encoded_vocab = bpe_utils.learn_bpe(
+            self.vocab, max_length, self.base_vocab, block_size
+        )
+        self._build_encoder()
+
+    def _build_encoder(self):
+        self.code = Code(self.merges, self.encoded_vocab)
+        self.encoder = Encoder(self.code, self.tokenizer)
+
+    def encode(self, line):
+        return self.encoder.encode(line)
+
+    def decode(self, words):
+        return self.encoder.decode(words)
+
+    def state_dict(self):
+        return {
+            "special_tokens": self.special_tokens,
+            "vocab": self.vocab,
+            "merges": self.merges,
+            "encoded_vocab": self.encoded_vocab,
+        }
+
+    def load_state_dict(self, state_dict):
+        self.special_tokens = state_dict["special_tokens"]
+        self.vocab = state_dict["vocab"]
+        self.merges = state_dict["merges"]
+        self.encoded_vocab = state_dict["encoded_vocab"]
+        if self.special_tokens is not None:
+            self._build_base_vocab(self.special_tokens)
+
+        if self.merges is not None:
+            self._build_encoder()
 
 
-def add_stats_for_word(word, count, counter):
-    for i in range(len(word) - 1):
-        counter[word[i], word[i + 1]] += count
+class Encoder:
+    def __init__(self, code, tokenizer):
+        super().__init__()
+        self.code = code
+        self.tokenizer = tokenizer
+
+    def encode(self, line):
+        words = self.tokenizer.tokenize(line)
+        words = [self.code.encode(word) for word in words]
+        return words
+
+    def decode(self, words):
+        words = [self.code.decode(word) for word in words]
+        line = self.tokenizer.detokenize(words)
+        return line
 
 
-def contains_pair(word, pair):
-    for i in range(len(word) - 1):
-        if (word[i], word[i + 1]) == pair:
-            return True
-    return False
+class Code:
+    """Maps tokens to tokens. Encode merges tokens. Decode unmerges to base_vocab."""
+
+    def __init__(self, merges, encoded_vocab):
+        super().__init__()
+        self.merge_dict = {pair: num for pair, num, _ in merges}
+        self.unmerge_dict = {num: pair for pair, num, _ in merges}
+        Code._precompute_unmerge(self.unmerge_dict, merges)
+        self.vocab_dict = Code._precompute_vocab(self.unmerge_dict, encoded_vocab)
+
+    @staticmethod
+    def _precompute_unmerge(unmerge_dict, merges):
+        for pair, num, _ in merges:
+            a, b = pair
+            if a in unmerge_dict:
+                a = unmerge_dict[a]
+            else:
+                a = (a,)
+
+            if b in unmerge_dict:
+                b = unmerge_dict[b]
+            else:
+                b = (b,)
+            unmerge_dict[num] = a + b
+
+    @staticmethod
+    def _precompute_vocab(unmerge_dict, encoded_vocab):
+        vocab_dict = {}
+        for tokens, _ in encoded_vocab:
+            decoded_tokens = []
+            for token in tokens:
+                if token in unmerge_dict:
+                    decoded_tokens += unmerge_dict[token]
+                else:
+                    decoded_tokens.append(token)
+            decoded_tokens = tuple(decoded_tokens)
+            vocab_dict[decoded_tokens] = tokens
+        return vocab_dict
+
+    def encode(self, word):
+        if word in self.vocab_dict:
+            return self.vocab_dict[word]
+
+        while len(word) > 1:
+            best_num = float("inf")
+            best = None
+            for i in range(len(word) - 1):
+                pair = (word[i], word[i + 1])
+                if pair not in self.merge_dict:
+                    continue
+
+                num = self.merge_dict[pair]
+                if num < best_num:
+                    best_num = num
+                    best = pair
+            if best is not None:
+                word = bpe_utils.replace_pair(word, best, best_num)
+            else:
+                break
+        return word
+
+    def decode(self, word):
+        result = []
+        for token in word:
+            if token in self.unmerge_dict:
+                result += self.unmerge_dict[token]
+            else:
+                result.append(token)
+        return tuple(result)
 
 
-def replace_pair(word, pair, num):
-    next = []
-    for i in range(len(word)):
-        next.append(word[i])
-        if len(next) < 2:
-            continue
-        if (next[-2], next[-1]) == pair:
-            next.pop()
-            next[-1] = num
-    return tuple(next)
+class BaseVocab:
+    """Encodes bytes to tokens"""
+
+    def __init__(self, special_tokens):
+        super().__init__()
+        self.base_vocab = [tuple(token.encode()) for token in special_tokens]
+        self.base_dict = {}
+        for x in range(256):
+            token = tuple(bytes([x]))
+            self.base_dict[x] = len(self.base_vocab)
+            self.base_vocab.append(token)
+
+    def encode(self, token):
+        return self.base_dict[token]
+
+    def decode(self, token):
+        return self.base_vocab[token]
+
+    def __len__(self):
+        return len(self.base_vocab)
 
 
-def subtract_counters(counter_a, counter_b):
-    counter_a.subtract(counter_b)
-    for k in counter_b:
-        if k in counter_a and counter_a[k] == 0:
-            del counter_a[k]
+class Tokenizer:
+    """Takes a unicode string and tokenizes them to words of base_vocab tokens.
+    Special tokens cannot be tokenized, only detokenized."""
 
+    def __init__(self, base_vocab):
+        super().__init__()
+        self.base_vocab = base_vocab
 
-def merge_vocab(vocab, best, num, pairs, cache, block_size=256):
-    for ind in range(0, len(vocab), block_size):
-        c = cache[ind // block_size]
-        if best not in c or c[best] == 0:
-            continue
+    def tokenize(self, line):
+        words = line.strip().split()
+        words = [tuple((word + " ").encode("utf-8", "ignore")) for word in words]
+        words = [(tuple(self.base_vocab.encode(ind)) for ind in word) for word in words]
+        return words
 
-        for v in range(ind, min(len(vocab), ind + block_size)):
-            word, count = vocab[v]
-
-            if not contains_pair(word, best):
-                continue
-
-            diff = collections.Counter()
-            add_stats_for_word(word, count, diff)
-            next = replace_pair(word, best, num)
-            sub = collections.Counter()
-            add_stats_for_word(next, count, sub)
-            subtract_counters(diff, sub)
-            subtract_counters(c, diff)
-            subtract_counters(pairs, diff)
-
-            vocab[v] = (next, count)
-
-
-def bpe(vocab, max_length, base_vocab, block_size=256):
-    vocab = vocab.copy()
-    last = len(base_vocab)
-    merges = []
-    pairs, cache = get_stats(vocab, block_size)
-    merge_count = []
-
-    for i in range(last, max_length):
-        if len(pairs) == 0:
-            break
-        best = pairs.most_common(1)[0][0]
-        merges.append((best, pairs[best]))
-        merge_vocab(vocab, best, i, pairs, cache, block_size)
-        if i % 100 == 0:
-            print(i)
-
-    return merges
-
-
-def get_merge_dict(merges, base_vocab):
-    return {k: (i + len(base_vocab), v) for i, (k, v) in enumerate(merges)}
-
-
-def bpe_encode_word(word, merge_dict):
-    while len(word) > 1:
-        mn = float("inf")
-        best = None
-        for i in range(len(word) - 1):
-            pair = (word[i], word[i + 1])
-            if pair not in merge_dict:
-                continue
-
-            num = merge_dict[pair][0]
-            if num < mn:
-                mn = num
-                best = pair
-        if best is not None:
-            word = replace_pair(word, best, mn)
-        else:
-            break
-    return word
-
-
-def bpe_encode(line, base_vocab_dict, merge_dict):
-    words = line.strip().split()
-    words = [tuple((word + " ").encode()) for word in words]
-    words = [tuple(base_vocab_dict[(ind,)] for ind in word) for word in words]
-    return [bpe_encode_word(word, merge_dict) for word in words]
-
-
-def bpe_decode_word(next, merge_dict):
-    word = []
-    next = list(next)
-    while len(next) > 0:
-        k = next.pop()
-        if k in merge_dict:
-            next.append(merge_dict[k][0][0])
-            next.append(merge_dict[k][0][1])
-        else:
-            word.append(k)
-    word.reverse()
-    return tuple(word)
-
-
-def bpe_decode(encoded, base_vocab_dict, merge_dict):
-    words = [bpe_decode_word(next, merge_dict) for next in encoded]
-    words = [bytes(x for ind in word for x in base_vocab_dict[ind]) for word in words]
-    words = [word.decode() for word in words]
-    return "".join(words).strip()
+    def detokenize(self, words):
+        words = [
+            bytes(x for ind in word for x in self.base_vocab.decode(ind))
+            for word in words
+        ]
+        words = [word.decode("utf-8", "ignore") for word in words]
+        return "".join(words).strip()
