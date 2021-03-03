@@ -170,7 +170,7 @@ class BaseVocab:
         self.base_dict = {}
         for x in range(256):
             token = tuple(bytes([x]))
-            self.base_dict[x] = len(self.base_vocab)
+            self.base_dict[token] = len(self.base_vocab)
             self.base_vocab.append(token)
 
     def encode(self, token):
@@ -194,7 +194,7 @@ class Tokenizer:
     def tokenize(self, line):
         words = line.strip().split()
         words = [tuple((word + " ").encode("utf-8", "ignore")) for word in words]
-        words = [tuple(token for ind in word for token in self.base_vocab.encode(ind)) for word in words]
+        words = [tuple(self.base_vocab.encode((ind,)) for ind in word) for word in words]
         return words
 
     def detokenize(self, words):
