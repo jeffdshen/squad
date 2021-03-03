@@ -119,7 +119,7 @@ def build_features(examples, data_type, out_file):
         for i, token in enumerate(example["ques_tokens"]):
             ques_idx[i] = token
         ques_idxs.append(ques_idx)
-        ques_lengths.append(len(example["ques_lengths"]))
+        ques_lengths.append(len(example["ques_tokens"]))
 
         if is_answerable(example):
             start, end = example["y1s"][-1], example["y2s"][-1]
