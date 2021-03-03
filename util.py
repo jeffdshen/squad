@@ -89,7 +89,7 @@ def add_data_args(parser):
     parser.add_argument("--dev_eval_file", type=str, default="dev_eval.json")
     parser.add_argument("--test_eval_file", type=str, default="test_eval.json")
 
-    # TODO delete?
+    parser.add_argument("--train_meta_file", type=str, default="train_meta.json")
     parser.add_argument("--dev_meta_file", type=str, default="dev_meta.json")
     parser.add_argument("--test_meta_file", type=str, default="test_meta.json")
     parser.add_argument("--word2idx_file", type=str, default="word2idx.json")

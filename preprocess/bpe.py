@@ -36,7 +36,7 @@ class BPE:
     def build_vocab(self, lines):
         self.vocab = bpe_utils.get_vocab_from_dict(lines, self.tokenizer)
 
-    def learn_bpe(self, max_length, l1_bs=16, l2_bs=256):
+    def learn_bpe(self, max_length, l1_bs=32, l2_bs=1024):
         self.merges, self.encoded_vocab = bpe_utils.learn_bpe(
             self.vocab, max_length, self.base_vocab, l1_bs=l1_bs, l2_bs=l2_bs
         )
@@ -51,6 +51,19 @@ class BPE:
 
     def decode(self, tokens):
         return self.encoder.decode(tokens)
+
+    def get_spans(self, tokens, line):
+        base_tokens = self.tokenizer.tokenize_indices(line)
+        base_index = 0
+        spans = []
+        for token in tokens:
+            decoded = self.code.decode([token])
+            span = base_tokens[base_index:base_index + len(decoded)]
+            assert tuple(zip(*span)[1]) == decoded
+            spans.append((span[0][0], span[-1][0] + 1))
+
+        return spans
+
 
     def state_dict(self):
         return {
@@ -199,11 +212,28 @@ class Tokenizer:
     def tokenize(self, line):
         """unicode -> list of words of base_vocab tokens"""
         words = line.strip().split()
-        words = [tuple((word + " ").encode("utf-8", "ignore")) for word in words]
+        words = [tuple((word + " ").encode("utf-8")) for word in words]
         words = [
             tuple(self.base_vocab.encode((ind,)) for ind in word) for word in words
         ]
         return words
+
+    def tokenize_indices(self, line):
+        """unicode to list of pair(original index, base_vocab token)"""
+        words = []
+        words.append([])
+        for ind, ch in enumerate(line):
+            if ch.isspace():
+                words.append([])
+            else:
+                words[-1].append((ind, ch))
+        words = [word for word in words if len(word) > 0]
+        for word in words:
+            word.append((word[-1][0], " "))
+    
+        chars = [x for word in words for x in word]
+        chars = [(ind, self.base_vocab.encode(by,)) for ind, ch in chars for by in ch.decode("utf-8")]
+        return chars
 
     def detokenize(self, tokens):
         """Flat (!) list of tokens -> unicode"""
