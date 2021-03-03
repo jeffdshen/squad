@@ -58,12 +58,14 @@ class BPE:
         spans = []
         for token in tokens:
             decoded = self.code.decode([token])
-            span = base_tokens[base_index:base_index + len(decoded)]
-            assert tuple(list(zip(*span))[1]) == decoded
+            span = base_tokens[base_index : base_index + len(decoded)]
+            assert tuple(list(zip(*span))[1]) == decoded, "Mismatch {} != {}".format(
+                tuple(list(zip(*span))[1]), decoded
+            )
             spans.append((span[0][0], span[-1][0] + 1))
+            base_index = base_index + len(decoded)
 
         return spans
-
 
     def state_dict(self):
         return {
@@ -80,7 +82,9 @@ class BPE:
         self.merges = state_dict["merges"]
         self.merges = [(tuple(pair), num, count) for pair, num, count in self.merges]
         self.encoded_vocab = state_dict["encoded_vocab"]
-        self.encoded_vocab = [(tuple(word), count) for word, count in self.encoded_vocab]
+        self.encoded_vocab = [
+            (tuple(word), count) for word, count in self.encoded_vocab
+        ]
         if self.special_tokens is not None:
             self._build_base_vocab()
 
@@ -230,9 +234,13 @@ class Tokenizer:
         words = [word for word in words if len(word) > 0]
         for word in words:
             word.append((word[-1][0], " "))
-    
+
         chars = [x for word in words for x in word]
-        chars = [(ind, self.base_vocab.encode((by,))) for ind, ch in chars for by in ch.encode("utf-8")]
+        chars = [
+            (ind, self.base_vocab.encode((by,)))
+            for ind, ch in chars
+            for by in ch.encode("utf-8")
+        ]
         return chars
 
     def detokenize(self, tokens):
