@@ -99,7 +99,7 @@ def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
             continue
         if c2[best] == 0:
             continue
-        
+
         hit2 -= 1
         miss2 += 1
 
@@ -134,7 +134,7 @@ def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
     return hit1, miss1, hit2, miss2
 
 
-def learn_bpe(vocab, max_length, base_vocab, l1_block_size=16, l2_block_size=256):
+def learn_bpe(vocab, max_length, base_vocab, l1_bs=16, l2_bs=256):
     """Performs bpe and returns the merge list.
 
     Returns:
@@ -144,7 +144,7 @@ def learn_bpe(vocab, max_length, base_vocab, l1_block_size=16, l2_block_size=256
     vocab = copy.deepcopy(vocab)
     last = len(base_vocab)
     merges = []
-    pairs, l1, l2 = get_stats(vocab, l1_block_size, l2_block_size)
+    pairs, l1, l2 = get_stats(vocab, l1_bs, l2_bs)
 
     pbar = tqdm(range(last, max_length))
     for i in pbar:
@@ -153,8 +153,16 @@ def learn_bpe(vocab, max_length, base_vocab, l1_block_size=16, l2_block_size=256
         best = pairs.most_common(1)[0][0]
         merges.append((best, i, pairs[best]))
         hit1, miss1, hit2, miss2 = merge_vocab(
-            vocab, best, i, pairs, l1, l2, l1_block_size, l2_block_size
+            vocab, best, i, pairs, l1, l2, l1_bs, l2_bs
         )
-        pbar.set_postfix({"hit2": hit2, "miss2": miss2, "hit1": hit1, "miss1": miss1, "pairs": len(pairs)})
+        pbar.set_postfix(
+            {
+                "hit2": hit2,
+                "miss2": miss2,
+                "hit1": hit1,
+                "miss1": miss1,
+                "pairs": len(pairs),
+            }
+        )
 
     return merges, vocab
