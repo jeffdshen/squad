@@ -34,7 +34,8 @@ def get_vocab_from_dict(lines, tokenizer):
         for word in words:
             vocab[word] += count
 
-    vocab.sort(lambda k: k[1], reverse=True)
+    vocab = list(vocab.items())
+    vocab.sort(key=lambda k: k[1], reverse=True)
     return vocab
 
 

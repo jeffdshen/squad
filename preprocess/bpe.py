@@ -194,7 +194,7 @@ class Tokenizer:
     def tokenize(self, line):
         words = line.strip().split()
         words = [tuple((word + " ").encode("utf-8", "ignore")) for word in words]
-        words = [(tuple(self.base_vocab.encode(ind)) for ind in word) for word in words]
+        words = [tuple(self.base_vocab.encode(ind)) for ind in word)) for word in words]
         return words
 
     def detokenize(self, words):
