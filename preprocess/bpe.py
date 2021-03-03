@@ -59,7 +59,7 @@ class BPE:
         for token in tokens:
             decoded = self.code.decode([token])
             span = base_tokens[base_index:base_index + len(decoded)]
-            assert tuple(zip(*span)[1]) == decoded
+            assert tuple(list(zip(*span))[1]) == decoded
             spans.append((span[0][0], span[-1][0] + 1))
 
         return spans
