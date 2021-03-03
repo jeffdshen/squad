@@ -162,7 +162,7 @@ def save(filename, obj, message=None):
 
 def preprocess(args):
     # Process training set and use it to construct bpe
-    bpe_state_dict = try_load(args.train_file)
+    bpe_state_dict = try_load(args.bpe_file)
     if bpe_state_dict is None:
         bpe = process_bpe_file(args.train_file, "train", args.max_tokens)
         save(args.bpe_file, bpe.state_dict(), "BPE")
