@@ -104,7 +104,7 @@ def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
         miss2 += 1
 
         for j in range(i, min(len(vocab), i + l2_bs), l1_bs):
-            c1 = l1[i // l1_bs]
+            c1 = l1[j // l1_bs]
             hit1 += 1
             if best not in c1:
                 continue
@@ -125,8 +125,8 @@ def merge_vocab(vocab, best, num, pairs, l1, l2, l1_bs, l2_bs):
                 sub = collections.Counter()
                 add_stats_for_word(next, count, sub)
                 subtract_counters(diff, sub)
-                subtract_counters(l1, diff)
-                subtract_counters(l2, diff)
+                subtract_counters(c1, diff)
+                subtract_counters(c2, diff)
                 subtract_counters(pairs, diff)
 
                 vocab[v] = (next, count)
