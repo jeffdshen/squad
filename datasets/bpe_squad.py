@@ -19,7 +19,6 @@ class MLM(data.Dataset):
     Args:
         data_path (str): Path to .npz file containing pre-processed dataset.
         max_tokens (int): Range of indices to generate for the random tokens.
-            It is also the ignore_index for y values.
     """
 
     def __init__(
@@ -30,6 +29,7 @@ class MLM(data.Dataset):
         unmask_prob=0.1,
         randomize_prob=0.1,
         block_size=512,
+        ignore_index=-1,
         padding_idx=0,
         cls_idx=1,
         sep_idx=2,
@@ -42,6 +42,7 @@ class MLM(data.Dataset):
         self.unmask_prob = unmask_prob
         self.randomize_prob = randomize_prob
         self.block_size = block_size
+        self.ignore_index = ignore_index
         self.padding_idx = padding_idx
         self.cls_idx = cls_idx
         self.sep_idx = sep_idx
@@ -68,7 +69,7 @@ class MLM(data.Dataset):
 
         x[masks[~unmask]] = self.mask_idx
         x[masks[random_mask]] = random_content
-        y[~masked] = self.max_tokens
+        y[~masked] = self.ignore_index
 
         return x, y
 
