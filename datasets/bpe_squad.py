@@ -10,7 +10,7 @@ import numpy as np
 import random
 
 
-class MLM(data.Dataset):
+class MLM(data.IterableDataset):
     """
     Each item in the dataset is a tuple with the following entries (in order):
         - x: Masked blocks of text, starting with [CLS], separated by [SEP]
@@ -25,6 +25,7 @@ class MLM(data.Dataset):
         self,
         data_path,
         max_tokens,
+        epoch_size,
         mask_prob=0.15,
         unmask_prob=0.1,
         randomize_prob=0.1,
@@ -37,6 +38,7 @@ class MLM(data.Dataset):
     ):
         super(MLM, self).__init__()
 
+        self.epoch_size = epoch_size
         self.max_tokens = max_tokens
         self.mask_prob = mask_prob
         self.unmask_prob = unmask_prob
@@ -84,14 +86,28 @@ class MLM(data.Dataset):
 
         return x, y
 
+    def __len__(self):
+        return self.epoch_size
+
     def __iter__(self):
+        worker_info = torch.utils.data.get_worker_info()
+        worker_id = 0
+        num_workers = 1
+        if worker_info is not None:
+            worker_id = worker_info.id
+            num_workers = worker_info.num_workers
+
+        epoch_size = self.epoch_size // num_workers
         next = torch.full((self.block_size,), self.padding_idx, dtype=torch.long)
         next[0] = self.cls_idx
         next_index = 1
+        n_samples = 0
         while True:
             dataset_size = self.context_idxs.size(0)
-            ids = list(zip(range(dataset_size), [0] * dataset_size)) + list(
-                zip(range(dataset_size), [1] * dataset_size)
+            ids = list(
+                zip(range(worker_id, dataset_size, num_workers), [0] * dataset_size)
+            ) + list(
+                zip(range(worker_id, dataset_size, num_workers), [1] * dataset_size)
             )
 
             random.random.shuffle(ids)
@@ -120,6 +136,9 @@ class MLM(data.Dataset):
                         )
                         next[0] = self.cls_idx
                         next_index = 1
+                        n_samples += 1
+                        if n_samples >= epoch_size:
+                            return
                     else:
                         next[next_index] = self.sep_index
                         next_index += 1

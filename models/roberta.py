@@ -71,6 +71,11 @@ class RoBERTa(nn.Module):
     def mask_scores(x, padding_mask):
         return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
 
+    # (S, N, O) -> (S, N)
+    @staticmethod
+    def get_top(x):
+        return F.argmax(x, dim=-1)
+
     # (S, N, O) -> (S, N, O*)
     @staticmethod
     def get_log_prob(x):

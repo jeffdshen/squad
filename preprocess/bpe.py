@@ -67,6 +67,9 @@ class BPE:
 
         return spans
 
+    def __len__(self):
+        return len(self.merges) + len(self.base_vocab)
+
     def state_dict(self):
         return {
             "special_tokens": self.special_tokens,

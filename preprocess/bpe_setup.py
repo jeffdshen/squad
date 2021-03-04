@@ -200,7 +200,6 @@ def setup(args):
 
 def add_args(parser):
     """Get arguments needed in setup.py."""
-    parser.add_argument("--bpe_file", type=str, default="./data/bpe.json")
     parser.add_argument(
         "--train_file",
         type=str,

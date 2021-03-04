@@ -83,6 +83,7 @@ def add_data_args(parser):
     parser.add_argument("--train_record_file", type=str, default="train.npz")
     parser.add_argument("--dev_record_file", type=str, default="dev.npz")
     parser.add_argument("--test_record_file", type=str, default="test.npz")
+    parser.add_argument("--bpe_file", type=str, default="bpe.json")
     parser.add_argument("--word_emb_file", type=str, default="word_emb.json")
     parser.add_argument("--char_emb_file", type=str, default="char_emb.json")
     parser.add_argument("--train_eval_file", type=str, default="train_eval.json")
