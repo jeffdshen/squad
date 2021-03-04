@@ -365,6 +365,7 @@ def add_mlm_args(parser):
 def add_train_args(parser):
     """Add arguments needed in train.py."""
     add_train_test_args(parser)
+    add_mlm_args(parser)
 
     parser.add_argument(
         "--epoch_size", type=int, default=100000, help="Number of samples per epoch."
