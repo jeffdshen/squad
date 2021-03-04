@@ -5,7 +5,7 @@ Author:
 """
 import argparse
 
-from trainer import bidaf_trainer, glove_transformer_trainer
+from trainer import bidaf_trainer, glove_transformer_trainer, roberta_pretrainer
 import util
 
 
@@ -26,6 +26,11 @@ def main():
     glove_transformer_trainer.add_train_args(glove_transformer)
     glove_transformer.set_defaults(train=glove_transformer_trainer.train)
     glove_transformer.set_defaults(data_sub_dir="bidaf")
+
+    roberta_pretrain = subparsers.add_parser("roberta_pretrain", parents=[parent_parser])
+    roberta_pretrainer.add_train_args(roberta_pretrain)
+    roberta_pretrainer.set_defaults(train=roberta_pretrainer.train)
+    roberta_pretrainer.set_defaults(data_sub_dir="bpe")
 
     args = parser.parse_args()
     if args.metric_name == "NLL":
