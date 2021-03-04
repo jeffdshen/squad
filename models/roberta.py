@@ -55,6 +55,8 @@ class RoBERTa(nn.Module):
             weight=embed_tokens.embed.weight,
         )
         self.ignore_idx = ignore_idx
+        self.apply(lambda mod: T.init_params_bert(mod, 0.02))
+
 
     # (S, N), (S, N), (N, S) -> (S, N, O)
     @amp.autocast()

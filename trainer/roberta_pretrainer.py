@@ -215,16 +215,16 @@ def train(args):
                 progress_bar.set_postfix(epoch=epoch, NLL=loss_val)
                 tbx.add_scalar("train/NLL", loss_val, sample_num)
                 tbx.add_scalar("train/LR", optimizer.param_groups[0]["lr"], sample_num)
-                tbx.add_scalar("train/steps", step, sample_num)
+                tbx.add_scalar("train/steps", step // args.gradient_accumulation, sample_num)
 
                 samples_till_eval -= batch_size
                 if samples_till_eval <= 0:
                     samples_till_eval = args.eval_per_n_samples
 
                     # Evaluate and save checkpoint
-                    log.info(f"Evaluating at step {step}...")
+                    log.info(f"Evaluating at sample step {sample_num}...")
                     results, preds = evaluate(model, dev_loader, device, args)
-                    saver.save(step, model, results[args.metric_name], device)
+                    saver.save(sample_num, model, results[args.metric_name], device)
 
                     # Log to console
                     results_str = ", ".join(
@@ -235,7 +235,7 @@ def train(args):
                     # Log to TensorBoard
                     log.info("Visualizing in TensorBoard...")
                     for k, v in results.items():
-                        tbx.add_scalar(f"dev/{k}", v, step)
+                        tbx.add_scalar(f"dev/{k}", v, sample_num)
                     visualize(
                         tbx,
                         preds=preds,
