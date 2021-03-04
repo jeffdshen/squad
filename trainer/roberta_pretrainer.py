@@ -240,7 +240,7 @@ def train(args):
                         tbx,
                         preds=preds,
                         bpe=bpe,
-                        step=step,
+                        sample_num=sample_num,
                         split="dev",
                         num_visuals=args.num_visuals,
                     )
@@ -280,7 +280,7 @@ def visualize(tbx, preds, bpe, sample_num, split, num_visuals):
     if num_visuals > len(preds):
         num_visuals = len(preds)
 
-    visuals = random.sample(preds, size=num_visuals)
+    visuals = random.sample(preds, k=num_visuals)
 
     for i, (pred, ques, ans) in enumerate(visuals):
         pred = bpe.decode(pred)
@@ -300,7 +300,7 @@ def visualize(tbx, preds, bpe, sample_num, split, num_visuals):
 
 def get_mlm_pred(model, x, y, scores, args):
     pred = model.get_top(scores)
-    mask = y == args.ignore_idx
+    mask = y != args.ignore_idx
     acc = (pred[mask] == y[mask]).float().mean().item()
     ans = y.clone().detach()
     ans[~mask] = x[~mask]
@@ -309,7 +309,7 @@ def get_mlm_pred(model, x, y, scores, args):
     pred = pred.tolist()
     pred = [[token for token in sample if token != args.padding_idx] for sample in pred]
     ques = x.transpose(0, 1)
-    ques = pred.tolist()
+    ques = ques.tolist()
     ques = [[token for token in sample if token != args.padding_idx] for sample in ques]
     ans = ans.transpose(0, 1)
     ans = ans.tolist()
@@ -329,6 +329,10 @@ def evaluate(model, data_loader, device, args):
             _, loss_val, scores = forward(x, y, args, device, model)
             nll_meter.update(loss_val, batch_size)
 
+            x = x.transpose(0, 1)
+            x = x.to(device)
+            y = y.transpose(0, 1)
+            y = y.to(device)
             pred, ques, ans, acc = get_mlm_pred(model.module, x, y, scores, args)
             acc_meter.update(acc, batch_size)
 

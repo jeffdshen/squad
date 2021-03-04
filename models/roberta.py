@@ -74,7 +74,7 @@ class RoBERTa(nn.Module):
     # (S, N, O) -> (S, N)
     @staticmethod
     def get_top(x):
-        return F.argmax(x, dim=-1)
+        return torch.argmax(x, dim=-1)
 
     # (S, N, O) -> (S, N, O*)
     @staticmethod
