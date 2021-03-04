@@ -142,16 +142,16 @@ def train(args):
     model = model.to(device)
 
     log.info(model)
-    log.info(
-        summary(
-            model,
-            input_size=(args.max_positions, args.batch_size),
-            dtypes=[torch.long],
-            device=device,
-            depth=5,
-            verbose=0,
-        )
-    )
+    # log.info(
+    #     summary(
+    #         model,
+    #         input_size=(args.max_positions, args.batch_size),
+    #         dtypes=[torch.long],
+    #         device=device,
+    #         depth=5,
+    #         verbose=0,
+    #     )
+    # )
     model.train()
 
     # Get saver
