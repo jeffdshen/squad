@@ -29,7 +29,7 @@ class MLM(data.Dataset):
         unmask_prob=0.1,
         randomize_prob=0.1,
         block_size=512,
-        ignore_index=-1,
+        ignore_idx=-1,
         padding_idx=0,
         cls_idx=1,
         sep_idx=2,
@@ -42,11 +42,17 @@ class MLM(data.Dataset):
         self.unmask_prob = unmask_prob
         self.randomize_prob = randomize_prob
         self.block_size = block_size
-        self.ignore_index = ignore_index
+        self.ignore_idx = ignore_idx
         self.padding_idx = padding_idx
         self.cls_idx = cls_idx
         self.sep_idx = sep_idx
         self.mask_idx = mask_idx
+        self.random_weights = [1] * self.max_tokens
+        self.random_weights[self.padding_idx] = 0
+        self.random_weights[self.cls_idx] = 0
+        self.random_weights[self.sep_idx] = 0
+        self.random_weights[self.mask_idx] = 0
+        # Don't need to do ignore_idx, since it should always be outside the range
 
         dataset = np.load(data_path)
         self.context_idxs = torch.from_numpy(dataset["context_idxs"]).long()
@@ -60,8 +66,13 @@ class MLM(data.Dataset):
         unmask = change_masks < self.unmask_prob
         random_mask = change_masks < (self.randomize_prob + self.unmask_prob)
         random_mask = random_mask & (~unmask)
-        random_content = torch.randint(
-            self.max_tokens, (random_mask.sum().item(),), dtype=torch.long
+        random_content = torch.tensor(
+            random.choice(
+                range(self.max_tokens),
+                weights=self.random_weights,
+                k=random_mask.sum().item(),
+            ),
+            dtype=torch.long,
         )
 
         masked = torch.tensor([False] * size, dtype=torch.bool)
@@ -69,7 +80,7 @@ class MLM(data.Dataset):
 
         x[masks[~unmask]] = self.mask_idx
         x[masks[random_mask]] = random_content
-        y[~masked] = self.ignore_index
+        y[~masked] = self.ignore_idx
 
         return x, y
 
