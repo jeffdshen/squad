@@ -374,7 +374,7 @@ def add_train_args(parser):
     add_mlm_args(parser)
 
     parser.add_argument(
-        "--epoch_size", type=int, default=100000, help="Number of samples per epoch."
+        "--epoch_size", type=int, default=25000, help="Number of samples per epoch."
     )
     parser.add_argument(
         "--dev_epoch_size",
@@ -385,7 +385,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--eval_per_n_samples",
         type=int,
-        default=50000,
+        default=12500,
         help="Number of samples between successive evaluations.",
     )
     parser.add_argument(
@@ -420,7 +420,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--num_epochs",
         type=int,
-        default=10,
+        default=30,
         help="Number of epochs for which to train. Negative means forever.",
     )
     parser.add_argument(
