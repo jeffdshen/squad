@@ -9,28 +9,26 @@ from trainer import bidaf_trainer, glove_transformer_trainer, roberta_pretrainer
 import util
 
 
+def add_subparser(name, data_sub_dir, subparsers, parent_parser, module):
+    subparser = subparsers.add_parser(name, parents=[parent_parser])
+    module.add_train_args(subparser)
+    subparser.set_defaults(train=module.train)
+    subparser.set_defaults(data_sub_dir=data_sub_dir)
+
+
 def main():
     parser = argparse.ArgumentParser("Train a model on SQuAD")
-    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent = argparse.ArgumentParser(add_help=False)
 
-    util.add_data_args(parent_parser)
-    util.add_train_args(parent_parser)
+    util.add_data_args(parent)
+    util.add_train_args(parent)
     subparsers = parser.add_subparsers()
 
-    bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
-    bidaf_trainer.add_train_args(bidaf)
-    bidaf.set_defaults(train=bidaf_trainer.train)
-    bidaf.set_defaults(data_sub_dir="bidaf")
-
-    glove_transformer = subparsers.add_parser("glove_transformer", parents=[parent_parser])
-    glove_transformer_trainer.add_train_args(glove_transformer)
-    glove_transformer.set_defaults(train=glove_transformer_trainer.train)
-    glove_transformer.set_defaults(data_sub_dir="bidaf")
-
-    roberta_pretrain = subparsers.add_parser("roberta_pretrain", parents=[parent_parser])
-    roberta_pretrainer.add_train_args(roberta_pretrain)
-    roberta_pretrainer.set_defaults(train=roberta_pretrainer.train)
-    roberta_pretrainer.set_defaults(data_sub_dir="bpe")
+    add_subparser("bidaf", "bidaf", subparsers, parent, bidaf_trainer)
+    add_subparser(
+        "glove_transformer", "bidaf", subparsers, parent, glove_transformer_trainer
+    )
+    add_subparser("roberta_pretrain", "bpe", subparsers, parent, roberta_pretrainer)
 
     args = parser.parse_args()
     if args.metric_name == "NLL":
