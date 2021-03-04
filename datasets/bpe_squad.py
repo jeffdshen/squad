@@ -69,7 +69,7 @@ class MLM(data.IterableDataset):
         random_mask = change_masks < (self.randomize_prob + self.unmask_prob)
         random_mask = random_mask & (~unmask)
         random_content = torch.tensor(
-            random.choice(
+            random.choices(
                 range(self.max_tokens),
                 weights=self.random_weights,
                 k=random_mask.sum().item(),
@@ -110,7 +110,7 @@ class MLM(data.IterableDataset):
                 zip(range(worker_id, dataset_size, num_workers), [1] * dataset_size)
             )
 
-            random.random.shuffle(ids)
+            random.shuffle(ids)
             for i, j in ids:
                 if j == 0:
                     sample = self.context_idxs[i]
@@ -140,7 +140,7 @@ class MLM(data.IterableDataset):
                         if n_samples >= epoch_size:
                             return
                     else:
-                        next[next_index] = self.sep_index
+                        next[next_index] = self.sep_idx
                         next_index += 1
 
 

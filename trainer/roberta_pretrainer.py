@@ -110,6 +110,7 @@ def get_model(args, bpe):
         ignore_idx=args.ignore_idx,
     )
     model = nn.DataParallel(model, args.gpu_ids)
+    return model
 
 
 def train(args):
@@ -255,6 +256,7 @@ def forward(x, y, args, device, model, autocast=True):
     with amp.autocast(enabled=autocast):
         scores = model(x, padding_mask=padding_mask)
         scores = model.module.mask_scores(scores, padding_mask)
+        y = y.transpose(0, 1)
         y = y.to(device)
         loss = model.module.get_loss(scores, y)
         loss_val = loss.item()

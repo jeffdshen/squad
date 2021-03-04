@@ -168,13 +168,13 @@ class LinearQAHead(nn.Module):
 class LMHead(nn.Module):
     def __init__(self, dim, output_tokens, activation, weight=None):
         super().__init__()
-        self.ff_linear = nn.Linear(dim)
+        self.ff_linear = nn.Linear(dim, dim)
         self.activation = get_activation_fn(activation)
         self.layer_norm = nn.LayerNorm(dim)
 
         self.output = nn.Linear(dim, output_tokens)
         if weight is not None:
-            self.output = weight
+            self.output.weight = weight
 
     # (S, N, E) -> (S, N, O)
     def forward(self, x):
