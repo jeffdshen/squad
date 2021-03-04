@@ -23,7 +23,7 @@ from ujson import load as json_load
 from os.path import join
 
 from models import BiDAF
-from datasets.squad import collate_fn, SQuAD
+from datasets.bidaf_squad import collate_fn, SQuAD
 import eval
 import trainer.util as util
 import trainer.stats as stats
