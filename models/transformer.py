@@ -160,12 +160,35 @@ class LinearQAHead(nn.Module):
         return x
 
     # ((S, N, O), (N, O)) -> (1,)
-    def get_loss(self, scores, y):
+    @staticmethod
+    def get_loss(scores, y):
         return F.cross_entropy(scores.transpose(0, 1), y)
 
 
 class LMHead(nn.Module):
-    pass
+    def __init__(self, dim, output_tokens, activation, weight=None):
+        super().__init__()
+        self.ff_linear = nn.Linear(dim)
+        self.activation = get_activation_fn(activation)
+        self.layer_norm = nn.LayerNorm(dim)
+
+        self.output = nn.Linear(dim, output_tokens)
+        if weight is not None:
+            self.output = weight
+
+    # (S, N, E) -> (S, N, O)
+    def forward(self, x):
+        x = self.ff_linear(x)
+        x = self.activation(x)
+        x = self.layer_norm(x)
+
+        x = self.output(x)
+        return x
+
+    # ((S, N, O), (S, N)) -> (1, )
+    @staticmethod
+    def get_loss(scores, y, ignore_idx):
+        return F.cross_entropy(scores.transpose(1, -1), y, ignore_index=ignore_idx)
 
 
 # (S, N) -> (S, N=1)
