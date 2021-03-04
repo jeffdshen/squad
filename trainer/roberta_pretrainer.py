@@ -248,13 +248,13 @@ def train(args):
 
 def forward(x, y, args, device, model, autocast=True):
     # Setup for forward
-    x = x.transpose(0, 1)
     x = x.to(device)
-    padding_mask = T.get_padding_mask(x, args.padding_idx)
+    padding_mask = T.get_padding_mask(x.transpose(0, 1), args.padding_idx)
 
     # Forward
     with amp.autocast(enabled=autocast):
         scores = model(x, padding_mask=padding_mask)
+        scores = scores.transpose(0, 1)
         scores = model.module.mask_scores(scores, padding_mask)
         y = y.transpose(0, 1)
         y = y.to(device)

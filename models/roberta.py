@@ -58,14 +58,18 @@ class RoBERTa(nn.Module):
         self.apply(lambda mod: T.init_params_bert(mod, 0.02))
 
 
-    # (S, N), (S, N), (N, S) -> (S, N, O)
+    # (N, S), (N, S), (N, S) -> (N, S, O)
     @amp.autocast()
     def forward(self, x, positions=None, padding_mask=None):
+        x = x.transpose(0, 1)
         if positions is None:
             positions = T.get_positions(x)
+        else:
+            positions = positions.transpose(0, 1)
         x = self.embed(x, positions)
         x = self.encoder.forward(x, key_padding_mask=padding_mask)
         x = self.head(x)
+        x = x.transpose(0, 1)
         return x
 
     # (S, N, O), (N, S) -> (S, N, O)
