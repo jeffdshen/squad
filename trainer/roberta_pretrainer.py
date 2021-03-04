@@ -132,7 +132,7 @@ def train(args):
 
     # Get model
     log.info("Building model...")
-    model = get_model(args)
+    model = get_model(args, bpe)
     if args.load_path:
         log.info(f"Loading checkpoint from {args.load_path}...")
         model, sample_num = util.load_model(model, args.load_path, args.gpu_ids)
