@@ -52,7 +52,7 @@ class RoBERTa(nn.Module):
             dim=dim,
             output_tokens=max_tokens,
             activation=activation,
-            weight=embed_tokens.weight,
+            weight=embed_tokens.embed.weight,
         )
         self.ignore_idx = ignore_idx
 
