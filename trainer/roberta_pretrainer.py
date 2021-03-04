@@ -139,6 +139,7 @@ def train(args):
         model, sample_num = util.load_model(model, args.load_path, args.gpu_ids)
     else:
         sample_num = 0
+    sample_num = 0
     model = model.to(device)
 
     log.info(model)
