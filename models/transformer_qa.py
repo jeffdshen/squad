@@ -46,6 +46,7 @@ class GloveTransformerQA(nn.Module):
             n_layers=n_layers,
         )
         self.head = T.LinearQAHead(dim=dim, output_logits=2)
+        self.apply(lambda mod: T.init_params_bert(mod, 0.02))
 
     # (S, N), (S, N), (N, S) -> (S, N, 2)
     @amp.autocast()
@@ -108,6 +109,7 @@ class WordTransformerQA(nn.Module):
             n_layers=n_layers,
         )
         self.head = T.LinearQAHead(dim=dim, output_logits=2)
+        self.apply(lambda mod: T.init_params_bert(mod, 0.02))
 
     # (S, N), (S, N), (N, S) -> (S, N, 2)
     @amp.autocast()
