@@ -19,12 +19,10 @@ from json import dumps
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
-from os.path import join
 
 from models import RoBERTa
 from datasets.bpe_squad import collate_fn, MLM
 from preprocess.bpe import BPE
-import eval
 import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
@@ -125,8 +123,12 @@ def train(args):
 
     # Get data loader
     log.info("Building dataset...")
-    train_dataset, train_loader = get_dataset(args, args.epoch_size, args.train_record_file, bpe)
-    dev_dataset, dev_loader = get_dataset(args, args.dev_epoch_size, args.dev_record_file, bpe)
+    train_dataset, train_loader = get_dataset(
+        args, args.epoch_size, args.train_record_file, bpe
+    )
+    dev_dataset, dev_loader = get_dataset(
+        args, args.dev_epoch_size, args.dev_record_file, bpe
+    )
 
     # Get model
     log.info("Building model...")
@@ -342,11 +344,28 @@ def evaluate(model, data_loader, device, args):
     return results, preds
 
 
+def add_mlm_args(parser):
+    parser.add_argument(
+        "--mask_prob", type=float, default=0.15, help="Mask probability."
+    )
+    parser.add_argument(
+        "--unmask_prob",
+        type=float,
+        default=0.1,
+        help="Probability to leave mask unchanged.",
+    )
+    parser.add_argument(
+        "--randomize_prob",
+        type=float,
+        default=0.1,
+        help="Probability to use a random token instead of mask.",
+    )
+
+
 def add_train_args(parser):
     """Add arguments needed in train.py."""
     add_train_test_args(parser)
 
-    """Add arguments common to train.py and test.py"""
     parser.add_argument(
         "--epoch_size", type=int, default=100000, help="Number of samples per epoch."
     )
