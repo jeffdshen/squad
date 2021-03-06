@@ -56,7 +56,6 @@ def get_logging(args):
     log = util.get_logger(args.save_dir, args.name)
     tbx = SummaryWriter(args.save_dir)
     log.info(f"Args: {dumps(vars(args), indent=4, sort_keys=True)}")
-    tbx.add_hparams(vars(args), {})
 
     # Set random seed
     log.info(f"Using random seed {args.seed}...")
