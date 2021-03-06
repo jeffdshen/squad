@@ -166,7 +166,7 @@ def visualize(tbx, pred_dict, eval_path, step, split, num_visuals):
     """Visualize text examples to TensorBoard.
 
     Args:
-        tbx (tensorboardX.SummaryWriter): Summary writer.
+        tbx (SummaryWriter): Summary writer.
         pred_dict (dict): dict of predictions of the form id -> pred.
         eval_path (str): Path to eval JSON file.
         step (int): Number of examples seen so far during training.

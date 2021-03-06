@@ -16,7 +16,7 @@ import torch.cuda.amp as amp
 
 from collections import OrderedDict
 from json import dumps
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
 
@@ -56,6 +56,7 @@ def get_logging(args):
     log = util.get_logger(args.save_dir, args.name)
     tbx = SummaryWriter(args.save_dir)
     log.info(f"Args: {dumps(vars(args), indent=4, sort_keys=True)}")
+    tbx.add_hparams(vars(args))
 
     # Set random seed
     log.info(f"Using random seed {args.seed}...")
@@ -194,6 +195,9 @@ def train(args):
     while epoch != args.num_epochs:
         epoch += 1
         log.info(f"Starting epoch {epoch}...")
+        # Print histogram of weights every epoch
+        for tags, params in model.named_parameters():
+            tbx.add_histogram(tags, params.data, epoch)
         with torch.enable_grad(), tqdm(total=len(train_loader.dataset)) as progress_bar:
             for x, y in train_loader:
                 batch_size = x.size(0)
@@ -270,7 +274,7 @@ def visualize(tbx, preds, bpe, sample_num, split, num_visuals):
     """Visualize text examples to TensorBoard.
 
     Args:
-        tbx (tensorboardX.SummaryWriter): Summary writer.
+        tbx (SummaryWriter): Summary writer.
         preds (list(tuple)): list of (pred, ques, ans)
         bpe (BPE): bpe encoder/decoder
         sample_num (int): Number of examples seen so far during training.

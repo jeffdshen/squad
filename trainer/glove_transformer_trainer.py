@@ -17,7 +17,7 @@ import torch.cuda.amp as amp
 
 from collections import OrderedDict
 from json import dumps
-from tensorboardX import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
 from os.path import join
