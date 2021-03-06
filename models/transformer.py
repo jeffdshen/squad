@@ -117,6 +117,45 @@ class TransformerEncoderLayer(nn.Module):
         return x
 
 
+class TransformerPrenormEncoderLayer(nn.Module):
+    def __init__(
+        self, dim, n_heads, ff_dim, activation, dropout, attn_dropout, act_dropout
+    ):
+        super().__init__()
+        self.self_attn = nn.MultiheadAttention(dim, n_heads, dropout=attn_dropout)
+        self.self_attn_dropout = nn.Dropout(dropout)
+        self.self_attn_norm = nn.LayerNorm(dim)
+
+        self.linear1 = nn.Linear(dim, ff_dim)
+        self.activation = get_activation_fn(activation)
+        self.act_dropout = nn.Dropout(act_dropout)
+        self.linear2 = nn.Linear(ff_dim, dim)
+        self.ff_dropout = nn.Dropout(dropout)
+
+        self.ff_norm = nn.LayerNorm(dim)
+
+    # ((S, N, E), (N, S), (S, S)) -> (S, N, E)
+    def forward(self, x, key_padding_mask=None, attn_mask=None):
+        residual = x
+        x = self.self_attn_norm(x)
+        x, _ = self.self_attn(
+            x, x, x, attn_mask=attn_mask, key_padding_mask=key_padding_mask
+        )
+        x = self.self_attn_dropout(x)
+        x = residual + x
+
+        residual = x
+        x = self.ff_norm(x)
+        x = self.linear1(x)
+        x = self.activation(x)
+        x = self.act_dropout(x)
+        x = self.linear2(x)
+        x = self.ff_dropout(x)
+        x = residual + x
+
+        return x
+
+
 class TransformerEncoder(nn.Module):
     def __init__(self, layer, n_layers):
         super().__init__()

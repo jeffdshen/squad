@@ -108,6 +108,7 @@ def get_model(args, bpe):
         max_tokens=len(bpe),
         padding_idx=args.padding_idx,
         ignore_idx=args.ignore_idx,
+        prenorm=args.prenorm,
     )
     model = nn.DataParallel(model, args.gpu_ids)
     return model
@@ -523,4 +524,10 @@ def add_train_test_args(parser):
         type=int,
         default=512,
         help="Maximum number of tokens.",
+    )
+    parser.add_argument(
+        "--prenorm",
+        type=lambda s: s.lower().startswith("t"),
+        default=False,
+        help="Whether to put LayerNorm after the residual or before.",
     )

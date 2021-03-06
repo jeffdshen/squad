@@ -27,6 +27,7 @@ class RoBERTa(nn.Module):
         max_tokens,
         padding_idx,
         ignore_idx,
+        prenorm=False,
     ):
         super().__init__()
         embed_tokens = T.LearnedTokenEmbedding(max_tokens, dim, padding_idx)
@@ -36,8 +37,9 @@ class RoBERTa(nn.Module):
             dim=dim,
             dropout=dropout,
         )
-        self.encoder = T.TransformerEncoder(
-            T.TransformerEncoderLayer(
+
+        if not prenorm:
+            encoder_layer = T.TransformerEncoderLayer(
                 dim=dim,
                 n_heads=n_heads,
                 ff_dim=ff_dim,
@@ -45,9 +47,28 @@ class RoBERTa(nn.Module):
                 dropout=dropout,
                 attn_dropout=attn_dropout,
                 act_dropout=act_dropout,
-            ),
+            )
+        else:
+            encoder_layer = T.TransformerPrenormEncoderLayer(
+                dim=dim,
+                n_heads=n_heads,
+                ff_dim=ff_dim,
+                activation=activation,
+                dropout=dropout,
+                attn_dropout=attn_dropout,
+                act_dropout=act_dropout,
+            )
+
+        self.encoder = T.TransformerEncoder(
+            encoder_layer,
             n_layers=n_layers,
         )
+
+        if prenorm:
+            self.final_layer_norm = nn.LayerNorm(dim)
+        else:
+            self.final_layer_norm = None
+
         self.head = T.LMHead(
             dim=dim,
             output_tokens=max_tokens,
@@ -56,7 +77,6 @@ class RoBERTa(nn.Module):
         )
         self.ignore_idx = ignore_idx
         self.apply(lambda mod: T.init_params_bert(mod, 0.02))
-
 
     # (N, S), (N, S), (N, S) -> (N, S, O)
     @amp.autocast()
@@ -68,6 +88,8 @@ class RoBERTa(nn.Module):
             positions = positions.transpose(0, 1)
         x = self.embed(x, positions)
         x = self.encoder.forward(x, key_padding_mask=padding_mask)
+        if self.final_layer_norm is not None:
+            x = self.final_layer_norm(x)
         x = self.head(x)
         x = x.transpose(0, 1)
         return x
