@@ -95,24 +95,20 @@ class RoBERTa(nn.Module):
         return x
 
     # (S, N, O), (N, S) -> (S, N, O)
-    @staticmethod
-    def mask_scores(x, padding_mask):
-        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+    def mask_scores(self, x, padding_mask):
+        return self.head.mask_scores(x, padding_mask)
 
     # (S, N, O) -> (S, N)
-    @staticmethod
-    def get_top(x):
-        return torch.argmax(x, dim=-1)
+    def get_top(self, x):
+        return self.head.get_top(x)
 
     # (S, N, O) -> (S, N, O*)
-    @staticmethod
-    def get_log_prob(x):
-        return F.log_softmax(x, dim=-1)
+    def get_log_prob(self, x):
+        return self.head.get_log_prob(x)
 
     # (S, N, O) -> (S, N, O*)
-    @staticmethod
-    def get_prob(x):
-        return F.softmax(x, dim=-1)
+    def get_prob(self, x):
+        return self.head.get_prob(x)
 
     # (S, N, O), (N, O) -> (1, )
     def get_loss(self, scores, y):
