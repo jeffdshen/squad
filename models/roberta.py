@@ -28,6 +28,7 @@ class RoBERTa(nn.Module):
         padding_idx,
         ignore_idx,
         prenorm=False,
+        qa=False,
     ):
         super().__init__()
         embed_tokens = T.LearnedTokenEmbedding(max_tokens, dim, padding_idx)
@@ -70,12 +71,15 @@ class RoBERTa(nn.Module):
         else:
             self.final_layer_norm = None
 
-        self.head = T.LMHead(
-            dim=dim,
-            output_tokens=max_tokens,
-            activation=activation,
-            weight=embed_tokens.embed.weight,
-        )
+        if qa:
+            self.head = T.LinearQAHead(dim=dim, output_logits=2)
+        else:
+            self.head = T.LMHead(
+                dim=dim,
+                output_tokens=max_tokens,
+                activation=activation,
+                weight=embed_tokens.embed.weight,
+            )
         self.ignore_idx = ignore_idx
         self.apply(lambda mod: T.init_params_bert(mod, 0.02))
 

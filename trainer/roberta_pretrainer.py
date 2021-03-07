@@ -109,6 +109,7 @@ def get_model(args, bpe):
         padding_idx=args.padding_idx,
         ignore_idx=args.ignore_idx,
         prenorm=args.prenorm,
+        qa=False,
     )
     model = nn.DataParallel(model, args.gpu_ids)
     return model
