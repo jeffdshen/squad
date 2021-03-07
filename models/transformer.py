@@ -179,7 +179,7 @@ class TransformerEncoderEmbedding(nn.Module):
         if layer_norm:
             self.layer_norm = nn.LayerNorm(dim)
         else:
-            self.layer_norm = False
+            self.layer_norm = None
         self.dropout = nn.Dropout(dropout)
 
     # ((S, N), (S, N)) -> (S, N, E)
