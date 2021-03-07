@@ -10,7 +10,6 @@ dependencies:
   - pip
   - spacy=2.0.16
   - tensorboard
-  - tensorflow
   - tqdm
   - urllib3
   - pytorch=1.7
