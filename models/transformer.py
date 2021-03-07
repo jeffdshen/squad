@@ -172,18 +172,22 @@ class TransformerEncoder(nn.Module):
 
 
 class TransformerEncoderEmbedding(nn.Module):
-    def __init__(self, embed_tokens, embed_position, dim, dropout):
+    def __init__(self, embed_tokens, embed_position, dim, dropout, layer_norm=True):
         super().__init__()
         self.embed_tokens = embed_tokens
         self.embed_position = embed_position
-        self.layer_norm = nn.LayerNorm(dim)
+        if layer_norm:
+            self.layer_norm = nn.LayerNorm(dim)
+        else:
+            self.layer_norm = False
         self.dropout = nn.Dropout(dropout)
 
     # ((S, N), (S, N)) -> (S, N, E)
     def forward(self, x, positions):
         x = self.embed_tokens(x)
         x = x + self.embed_position(positions)
-        x = self.layer_norm(x)
+        if self.layer_norm is not None:
+            x = self.layer_norm(x)
         x = self.dropout(x)
         return x
 

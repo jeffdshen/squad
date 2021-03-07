@@ -36,6 +36,7 @@ class RoBERTa(nn.Module):
             T.LearnedPositionalEmbedding(max_positions, dim),
             dim=dim,
             dropout=dropout,
+            layer_norm=(not prenorm),
         )
 
         if not prenorm:
