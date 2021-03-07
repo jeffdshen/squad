@@ -198,6 +198,21 @@ class LinearQAHead(nn.Module):
         x = self.linear(x)
         return x
 
+    # (S, N, O), (N, S) -> (S, N, O)
+    @staticmethod
+    def mask_scores(x, padding_mask):
+        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+
+    # (S, N, O) -> (S*, N, O)
+    @staticmethod
+    def get_log_prob(x):
+        return F.log_softmax(x, dim=0)
+
+    # (S, N, O) -> (S*, N, O)
+    @staticmethod
+    def get_prob(x):
+        return F.softmax(x, dim=0)
+
     # ((S, N, O), (N, O)) -> (1,)
     @staticmethod
     def get_loss(scores, y):
