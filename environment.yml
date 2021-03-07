@@ -9,7 +9,7 @@ dependencies:
   - numpy
   - pip
   - spacy=2.0.16
-  - tensorboard
+  - tensorboard=1.15.0
   - tqdm
   - urllib3
   - pytorch=1.7
