@@ -328,7 +328,7 @@ def evaluate(model, data_loader, device, args):
 
     model.eval()
     preds = []
-    with torch.no_grad(), tqdm(total=len(data_loader.dataset)) as progress_bar:
+    with torch.no_grad():
         for x, y in data_loader:
             batch_size = x.size(0)
             _, loss_val, scores = forward(x, y, args, device, model)
@@ -340,10 +340,6 @@ def evaluate(model, data_loader, device, args):
             y = y.to(device)
             pred, ques, ans, acc = get_mlm_pred(model.module, x, y, scores, args)
             acc_meter.update(acc, batch_size)
-
-            # Log info
-            progress_bar.update(batch_size)
-            progress_bar.set_postfix(NLL=nll_meter.avg)
 
             preds += zip(pred, ques, ans)
 
