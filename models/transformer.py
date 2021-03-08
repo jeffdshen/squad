@@ -202,25 +202,25 @@ class LinearQAHead(nn.Module):
         x = self.linear(x)
         return x
 
-    # (S, N, O), (N, S) -> (S, N, O)
+    # (N, S, O), (N, S) -> (N, S, O)
     @staticmethod
     def mask_scores(x, padding_mask):
-        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+        return x.masked_fill(padding_mask.unsqueeze(-1), float("-inf"))
 
-    # (S, N, O) -> (S*, N, O)
+    # (N, S, O) -> (N, S*, O)
     @staticmethod
     def get_log_prob(x):
-        return F.log_softmax(x, dim=0)
+        return F.log_softmax(x, dim=1)
 
-    # (S, N, O) -> (S*, N, O)
+    # (N, S, O) -> (N, S*, O)
     @staticmethod
     def get_prob(x):
-        return F.softmax(x, dim=0)
+        return F.softmax(x, dim=1)
 
-    # ((S, N, O), (N, O)) -> (1,)
+    # ((N, S, O), (N, O)) -> (1,)
     @staticmethod
     def get_loss(scores, y):
-        return F.cross_entropy(scores.transpose(0, 1), y)
+        return F.cross_entropy(scores, y)
 
 
 class LMHead(nn.Module):
@@ -243,27 +243,27 @@ class LMHead(nn.Module):
         x = self.output(x)
         return x
 
-    # (S, N, O), (N, S) -> (S, N, O)
+    # (N, S, O), (N, S) -> (N, S O)
     @staticmethod
     def mask_scores(x, padding_mask):
-        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+        return x.masked_fill(padding_mask.unsqueeze(-1), float("-inf"))
 
-    # (S, N, O) -> (S, N)
+    # (N, S, O) -> (N, S)
     @staticmethod
     def get_top(x):
         return torch.argmax(x, dim=-1)
 
-    # (S, N, O) -> (S, N, O*)
+    # (N, S, O) -> (N, S, O*)
     @staticmethod
     def get_log_prob(x):
         return F.log_softmax(x, dim=-1)
 
-    # (S, N, O) -> (S, N, O*)
+    # (N, S, O) -> (N, S, O*)
     @staticmethod
     def get_prob(x):
         return F.softmax(x, dim=-1)
 
-    # ((S, N, O), (S, N)) -> (1, )
+    # ((N, S, O), (N, S)) -> (1, )
     @staticmethod
     def get_loss(scores, y, ignore_idx):
         return F.cross_entropy(scores.transpose(1, -1), y, ignore_index=ignore_idx)
@@ -275,9 +275,9 @@ def get_positions(x):
     return positions.unsqueeze(1)
 
 
-# (S, N) -> (N, S)
+# (N, S) -> (N, S)
 def get_padding_mask(x, padding_idx):
-    return x.eq(padding_idx).transpose(0, 1)
+    return x.eq(padding_idx)
 
 
 def init_params_bert(module, std):

@@ -242,7 +242,7 @@ def concat_example(c, q, padding_idx, max_positions):
     x_mask = x_range < c_len.unsqueeze(-1)
     c_mask = torch.arange(c.size(1), device=x.device).unsqueeze(0) < c_len.unsqueeze(-1)
     x[x_mask] = c[c_mask]
-    c_padding_mask = T.get_padding_mask(x.transpose(0, 1), padding_idx)
+    c_padding_mask = T.get_padding_mask(x, padding_idx)
 
     x_mask = (x_range < length.unsqueeze(-1)) & ~x_mask
     q_mask = torch.arange(q.size(1), device=x.device).unsqueeze(0) < q_len.unsqueeze(-1)
@@ -256,7 +256,6 @@ def forward(cw_idxs, qw_idxs, y1, y2, padding_idx, args, device, model, autocast
     x, c_padding_mask, c_len = concat_example(
         cw_idxs, qw_idxs, padding_idx, args.max_positions
     )
-    x = x.transpose(0, 1)
     x = x.to(device)
     c_padding_mask = c_padding_mask.to(device)
     padding_mask = T.get_padding_mask(x, padding_idx)
@@ -299,7 +298,7 @@ def evaluate(
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
+            p1, p2 = model.module.get_prob(scores).split(1, dim=-1)
             p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
             starts, ends = util.discretize(p1, p2, max_len, use_squad_v2)
 
@@ -459,7 +458,7 @@ def test(args):
             nll_meter.update(loss_val, batch_size)
 
             # Get F1 and EM scores
-            p1, p2 = model.module.get_prob(scores).transpose(0, 1).split(1, dim=-1)
+            p1, p2 = model.module.get_prob(scores).split(1, dim=-1)
             p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
             starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
 

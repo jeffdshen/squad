@@ -255,14 +255,12 @@ def train(args):
 def forward(x, y, args, device, model, autocast=True):
     # Setup for forward
     x = x.to(device)
-    padding_mask = T.get_padding_mask(x.transpose(0, 1), args.padding_idx)
+    padding_mask = T.get_padding_mask(x, args.padding_idx)
 
     # Forward
     with amp.autocast(enabled=autocast):
         scores = model(x, padding_mask=padding_mask)
-        scores = scores.transpose(0, 1)
         scores = model.module.mask_scores(scores, padding_mask)
-        y = y.transpose(0, 1)
         y = y.to(device)
         loss = model.module.get_loss(scores, y)
         loss_val = loss.item()
@@ -311,13 +309,10 @@ def get_mlm_pred(model, x, y, scores, args):
     ans = y.clone().detach()
     ans[~mask] = x[~mask]
     pred[~mask] = x[~mask]
-    pred = pred.transpose(0, 1)
     pred = pred.tolist()
     pred = [[token for token in sample if token != args.padding_idx] for sample in pred]
-    ques = x.transpose(0, 1)
-    ques = ques.tolist()
+    ques = x.tolist()
     ques = [[token for token in sample if token != args.padding_idx] for sample in ques]
-    ans = ans.transpose(0, 1)
     ans = ans.tolist()
     ans = [[token for token in sample if token != args.padding_idx] for sample in ans]
     return pred, ques, ans, acc
@@ -335,9 +330,7 @@ def evaluate(model, data_loader, device, args):
             _, loss_val, scores = forward(x, y, args, device, model)
             nll_meter.update(loss_val, batch_size)
 
-            x = x.transpose(0, 1)
             x = x.to(device)
-            y = y.transpose(0, 1)
             y = y.to(device)
             pred, ques, ans, acc = get_mlm_pred(model.module, x, y, scores, args)
             acc_meter.update(acc, batch_size)

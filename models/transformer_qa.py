@@ -51,26 +51,30 @@ class GloveTransformerQA(nn.Module):
     # (S, N), (S, N), (N, S) -> (S, N, 2)
     @amp.autocast()
     def forward(self, x, positions=None, padding_mask=None):
+        x = x.transpose(0, 1)
         if positions is None:
             positions = T.get_positions(x)
+        else:
+            positions = positions.transpose(0, 1)
         x = self.embed(x, positions)
         x = self.encoder.forward(x, key_padding_mask=padding_mask)
         x = self.head(x)
+        x = x.transpose(0, 1)
         return x
 
-    # (S, N, 2), (N, S) -> (S, N, 2)
+    # (N, S, 2), (N, S) -> (N, S, 2)
     def mask_scores(self, x, padding_mask):
-        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+        return self.head.mask_scores(x, padding_mask)
 
-    # (S, N, 2) -> (S, N, 2)
+    # (N, S, 2) -> (N, S, 2)
     def get_log_prob(self, x):
-        return F.log_softmax(x, dim=0)
+        return self.head.get_log_prob(x)
 
-    # (S, N, 2) -> (S, N, 2)
+    # (N, S, 2) -> (N, S, 2)
     def get_prob(self, x):
-        return F.softmax(x, dim=0)
+        return self.head.get_prob(x)
 
-    # (S, N, 2), (N, 2) -> (1, )
+    # (N, S, 2), (N, 2) -> (1, )
     def get_loss(self, scores, y):
         return self.head.get_loss(scores, y)
 
@@ -114,25 +118,29 @@ class WordTransformerQA(nn.Module):
     # (S, N), (S, N), (N, S) -> (S, N, 2)
     @amp.autocast()
     def forward(self, x, positions=None, padding_mask=None):
+        x = x.transpose(0, 1)
         if positions is None:
             positions = T.get_positions(x)
+        else:
+            positions = positions.transpose(0, 1)
         x = self.embed(x, positions)
         x = self.encoder.forward(x, key_padding_mask=padding_mask)
         x = self.head(x)
+        x = x.transpose(0, 1)
         return x
 
-    # (S, N, 2), (N, S) -> (S, N, 2)
+    # (N, S, 2), (N, S) -> (N, S, 2)
     def mask_scores(self, x, padding_mask):
-        return x.masked_fill(padding_mask.transpose(0, 1).unsqueeze(-1), float("-inf"))
+        return self.head.mask_scores(x, padding_mask)
 
-    # (S, N, 2) -> (S, N, 2)
+    # (N, S, 2) -> (N, S, 2)
     def get_log_prob(self, x):
-        return F.log_softmax(x, dim=0)
+        return self.head.get_log_prob(x)
 
-    # (S, N, 2) -> (S, N, 2)
+    # (N, S, 2) -> (N, S, 2)
     def get_prob(self, x):
-        return F.softmax(x, dim=0)
+        return self.head.get_prob(x)
 
-    # (S, N, 2), (N, 2) -> (1, )
+    # (N, S, 2), (N, 2) -> (1, )
     def get_loss(self, scores, y):
         return self.head.get_loss(scores, y)

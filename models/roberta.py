@@ -99,22 +99,22 @@ class RoBERTa(nn.Module):
         x = x.transpose(0, 1)
         return x
 
-    # (S, N, O), (N, S) -> (S, N, O)
+    # (N, S, O), (N, S) -> (N, S, O)
     def mask_scores(self, x, padding_mask):
         return self.head.mask_scores(x, padding_mask)
 
-    # (S, N, O) -> (S, N)
+    # (N, S, O) -> (N, S)
     def get_top(self, x):
         return self.head.get_top(x)
 
-    # (S, N, O) -> (S, N, O*)
+    # (N, S, O) -> (N, S, O*)
     def get_log_prob(self, x):
         return self.head.get_log_prob(x)
 
-    # (S, N, O) -> (S, N, O*)
+    # (N, S, O) -> (N, S, O*)
     def get_prob(self, x):
         return self.head.get_prob(x)
 
-    # (S, N, O), (N, O) -> (1, )
+    # (N, S, O), (N, O) -> (1, )
     def get_loss(self, scores, y):
         return self.head.get_loss(scores, y, self.ignore_idx)
