@@ -51,13 +51,13 @@ class Trainer:
 
         return args, log, tbx
 
-    def setup_saver(self, metric_name):
+    def setup_saver(self):
         args = self.args
         log = self.log
         self.saver = ModelSaver(
             args.save_dir,
             max_checkpoints=args.max_checkpoints,
-            metric_name=metric_name,
+            metric_name=args.metric_name,
             maximize_metric=args.maximize_metric,
             log=log,
         )
