@@ -104,7 +104,7 @@ class Trainer:
     def setup_step(self, step_vars):
         log = self.log
         if self.state_dict is not None:
-            log.info("Reloading step: {}", self.state_dict["step"])
+            log.info("Reloading step: {}".format(self.state_dict["step"]))
             return self.state_dict["step"]
 
         return step_vars
