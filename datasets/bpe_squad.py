@@ -243,7 +243,7 @@ class SQuAD(data.Dataset):
                     windows.append((c[c_start:c_end], q[:q_len], y1, y2, id))
 
             # Collate windows
-            max_len = max(len(window[0]) + len(window[1]) for window in windows)
+            max_len = max(len(window[0]) + len(window[1]) + 2 for window in windows)
             assert max_len <= self.block_size
             x = torch.full((len(windows), max_len), self.padding_idx, dtype=torch.long)
             y = torch.zeros(len(windows), 2, dtype=torch.long)
