@@ -225,11 +225,13 @@ class SQuAD(data.Dataset):
                 # We want to keep going so long as c_end = c_start + (block_size - q_len - 2)
                 # has not been at least c_len for the first time, i.e. c_end < c_len + stride.
                 # We also want to take at least one step.
-                c_range = range(0, max(1, c_len + q_len + 2 - self.block_size + stride), stride)
+                c_range = range(
+                    0, max(1, c_len + q_len + 2 - self.block_size + stride), stride
+                )
                 if randomize:
                     c_start = random.sample(c_range, k=1)[0]
                     c_range = range(c_start, c_start + 1)
-    
+
                 for c_start in c_range:
                     c_end = min(self.block_size - q_len - 2 + c_start, c_len)
                     if y1 < c_start or y2 < c_start or y1 >= c_end or y2 >= c_end:
@@ -249,13 +251,13 @@ class SQuAD(data.Dataset):
             ids = torch.zeros(len(windows), dtype=torch.long)
             for i, window in enumerate(windows):
                 c, q, y1, y2, id = window
-                x[i][0] = self.cls_idx
-                x[i][1 : 1 + len(c)] = c
-                x[i][1 + len(c)] = self.sep_idx
-                x[i][2 + len(c) : 2 + len(c) + len(q)] = q
-                c_padding_mask[i][0: 1 + len(c)] = False
-                y[i][0] = y1 + 1
-                y[i][1] = y2 + 1
+                x[i, 0] = self.cls_idx
+                x[i, 1 : 1 + len(c)] = c
+                x[i, 1 + len(c)] = self.sep_idx
+                x[i, 2 + len(c) : 2 + len(c) + len(q)] = q
+                c_padding_mask[i][0 : 1 + len(c)] = False
+                y[i, 0] = y1 + 1
+                y[i, 1] = y2 + 1
                 ids[i] = id
             return x, y, c_padding_mask, ids
 
