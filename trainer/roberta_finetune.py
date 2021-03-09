@@ -297,7 +297,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--eval_per_n_samples",
         type=int,
-        default=50000,
+        default=25000,
         help="Number of samples between successive evaluations.",
     )
     parser.add_argument(
