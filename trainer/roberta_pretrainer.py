@@ -158,9 +158,9 @@ def train(args):
     trainer.setup_close()
 
     while epoch != args.num_epochs:
+        trainer.save_checkpoint(step_vars=(sample_num, samples_till_eval, epoch, step))
         epoch += 1
         log.info(f"Starting epoch {epoch}...")
-        trainer.save_checkpoint(step_vars=(sample_num, samples_till_eval, epoch, step))
         # Print histogram of weights every epoch
         for tags, params in model.named_parameters():
             tbx.add_histogram(tags, params.data, epoch)
