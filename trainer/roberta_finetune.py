@@ -250,7 +250,7 @@ def evaluate(model, data_loader, device, eval_file, args):
     pred_dict = {}
     with open(eval_file, "r") as fh:
         gold_dict = json_load(fh)
-    with torch.no_grad(), tqdm(total=len(data_loader.dataset)) as progress_bar:
+    with torch.no_grad():
         for x, y, c_padding_mask, ids in data_loader:
             batch_size = x.size(0)
             _, loss_val, scores = forward(x, y, c_padding_mask, args, device, model)
@@ -260,10 +260,6 @@ def evaluate(model, data_loader, device, eval_file, args):
             p1, p2 = model.module.get_prob(scores).split(1, dim=-1)
             p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
             starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
-
-            # Log info
-            progress_bar.update(batch_size)
-            progress_bar.set_postfix(NLL=nll_meter.avg)
 
             preds, _ = util.convert_tokens(
                 gold_dict,
