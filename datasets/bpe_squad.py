@@ -227,7 +227,7 @@ class SQuAD(data.Dataset):
                 # We also want to take at least one step.
                 c_range = range(0, max(1, c_len + q_len + 2 - self.block_size + stride), stride)
                 if randomize:
-                    c_start = random.sample(c_range, k=1)
+                    c_start = random.sample(c_range, k=1)[0]
                     c_range = range(c_start, c_start + 1)
     
                 for c_start in c_range:
