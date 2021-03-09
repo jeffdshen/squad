@@ -23,6 +23,7 @@ from ujson import load as json_load
 from models import RoBERTa
 from datasets.bpe_squad import collate_fn, MLM
 from preprocess.bpe import BPE
+import trainer.trainer as base_trainer
 import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
@@ -38,7 +39,7 @@ def add_special_tokens(args):
     args.mask_idx = 3
 
 
-def get_logging(args):
+def get_args(args):
     # Compute derived args values
     device, args.gpu_ids = util.get_available_devices()
 
@@ -51,18 +52,7 @@ def get_logging(args):
     if args.decay_forever:
         args.num_steps = float("inf")
 
-    # Set up logging and devices
-    log = util.get_logger(args.save_dir, args.name)
-    tbx = SummaryWriter(args.save_dir)
-    log.info(f"Args: {dumps(vars(args), indent=4, sort_keys=True)}")
-
-    # Set random seed
-    log.info(f"Using random seed {args.seed}...")
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
-    return log, tbx, device
+    return args, device
 
 
 def get_bpe(args):
@@ -110,13 +100,15 @@ def get_model(args, bpe):
         prenorm=args.prenorm,
         qa=False,
     )
-    model = nn.DataParallel(model, args.gpu_ids)
     return model
 
 
 def train(args):
-    # Set up logging and devices
-    log, tbx, device = get_logging(args)
+    trainer = base_trainer.Trainer()
+    args, device = get_args(args)
+    args, log, tbx = trainer.setup(args)
+    trainer.setup_saver()
+    trainer.setup_random()
 
     # Get BPE
     log.info("Loading BPE...")
@@ -135,37 +127,9 @@ def train(args):
     # Get model
     log.info("Building model...")
     model = get_model(args, bpe)
-    if args.load_path:
-        log.info(f"Loading checkpoint from {args.load_path}...")
-        model, sample_num = util.load_model(model, args.load_path, args.gpu_ids)
-    else:
-        sample_num = 0
-    sample_num = 0
-    model = model.to(device)
+    model = trainer.setup_model(model, device)
 
-    log.info(model)
-    # log.info(
-    #     summary(
-    #         model,
-    #         input_size=(args.max_positions, args.batch_size),
-    #         dtypes=[torch.long],
-    #         device=device,
-    #         depth=5,
-    #         verbose=0,
-    #     )
-    # )
-    model.train()
-
-    # Get saver
-    saver = util.CheckpointSaver(
-        args.save_dir,
-        max_checkpoints=args.max_checkpoints,
-        metric_name=args.metric_name,
-        maximize_metric=args.maximize_metric,
-        log=log,
-    )
-
-    # Get optimizer and scheduler
+    # Get optimizer, scheduler, and scaler
     optimizer = optim.AdamW(
         model.parameters(),
         args.lr,
@@ -178,16 +142,25 @@ def train(args):
         optimizer, args.warmup_steps, args.num_steps, power=args.power_decay
     )
 
+    scaler = amp.GradScaler()
+    optimizer, scheduler, scaler = trainer.setup_optimizer(optimizer, scheduler, scaler)
+
     # Train
     log.info("Training...")
+    model.train()
+    sample_num = 0
     samples_till_eval = args.eval_per_n_samples
     epoch = sample_num // args.epoch_size
-    scaler = amp.GradScaler()
     step = 0
+    sample_num, samples_till_eval, epoch, step = trainer.setup_step(
+        step_vars=(sample_num, samples_till_eval, epoch, step)
+    )
+    trainer.setup_close()
 
     while epoch != args.num_epochs:
         epoch += 1
         log.info(f"Starting epoch {epoch}...")
+        trainer.save_checkpoint(step_vars=(sample_num, samples_till_eval, epoch, step))
         # Print histogram of weights every epoch
         for tags, params in model.named_parameters():
             tbx.add_histogram(tags, params.data, epoch)
@@ -225,7 +198,7 @@ def train(args):
                     # Evaluate and save checkpoint
                     log.info(f"Evaluating at sample step {sample_num}...")
                     results, preds = evaluate(model, dev_loader, device, args)
-                    saver.save(sample_num, model, results[args.metric_name], device)
+                    trainer.save_best(sample_num, results[args.metric_name])
 
                     # Log to console
                     results_str = ", ".join(
@@ -361,6 +334,7 @@ def add_mlm_args(parser):
 def add_train_args(parser):
     """Add arguments needed in train.py."""
     add_train_test_args(parser)
+    base_trainer.add_train_args(parser)
     add_mlm_args(parser)
 
     parser.add_argument(
@@ -415,19 +389,10 @@ def add_train_args(parser):
         help="Name of dev metric to determine best checkpoint.",
     )
     parser.add_argument(
-        "--max_checkpoints",
-        type=int,
-        default=5,
-        help="Maximum number of checkpoints to keep on disk.",
-    )
-    parser.add_argument(
         "--max_grad_norm",
         type=float,
         default=5.0,
         help="Maximum gradient norm for gradient clipping.",
-    )
-    parser.add_argument(
-        "--seed", type=int, default=224, help="Random seed for reproducibility."
     )
 
 
