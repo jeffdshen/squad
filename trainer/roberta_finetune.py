@@ -234,6 +234,7 @@ def forward(x, y, c_padding_mask, args, device, model, autocast=True):
     # Forward
     with amp.autocast(enabled=autocast):
         scores = model(x, padding_mask=padding_mask)
+        c_padding_mask = c_padding_mask.to(device)
         scores = model.module.mask_scores(scores, c_padding_mask)
         y = y.to(device)
         loss = model.module.get_loss(scores, y)

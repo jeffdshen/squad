@@ -243,7 +243,7 @@ class LMHead(nn.Module):
         x = self.output(x)
         return x
 
-    # (N, S, O), (N, S) -> (N, S O)
+    # (N, S, O), (N, S) -> (N, S, O)
     @staticmethod
     def mask_scores(x, padding_mask):
         # Swap the dimension back to original order for speed reasons
