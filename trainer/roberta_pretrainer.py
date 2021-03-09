@@ -48,9 +48,8 @@ def get_logging(args):
     if args.num_epochs >= 0:
         args.num_steps *= args.num_epochs
 
-    args.warmup_steps = int(args.num_steps * args.warmup_ratio)
     if args.decay_forever:
-        args.num_steps = -1
+        args.num_steps = float("inf")
 
     # Set up logging and devices
     log = util.get_logger(args.save_dir, args.name)
@@ -175,14 +174,8 @@ def train(args):
         weight_decay=args.l2_wd,
     )
 
-    scheduler = sched.LinearWarmupPowerDecay(
-        optimizer,
-        args.start_lr,
-        args.lr,
-        args.end_lr,
-        args.warmup_steps,
-        args.num_steps,
-        power=args.power_decay,
+    scheduler = sched.get_linear_warmup_power_decay_scheduler(
+        optimizer, args.warmup_steps, args.num_steps, power=args.power_decay
     )
 
     # Train
@@ -221,7 +214,9 @@ def train(args):
                 progress_bar.set_postfix(epoch=epoch, NLL=loss_val)
                 tbx.add_scalar("train/NLL", loss_val, sample_num)
                 tbx.add_scalar("train/LR", optimizer.param_groups[0]["lr"], sample_num)
-                tbx.add_scalar("train/steps", step // args.gradient_accumulation, sample_num)
+                tbx.add_scalar(
+                    "train/steps", step // args.gradient_accumulation, sample_num
+                )
 
                 samples_till_eval -= batch_size
                 if samples_till_eval <= 0:
@@ -388,23 +383,17 @@ def add_train_args(parser):
         type=int,
         default=4,
     )
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate.")
+    parser.add_argument("--lr", type=float, default=0.025, help="Learning rate.")
     parser.add_argument(
-        "--warmup_ratio", type=float, default=0.06, help="Warmup steps / total steps."
+        "--warmup_steps", type=float, default=7500, help="Warmup optimizer steps."
     )
     parser.add_argument(
-        "--power_decay", type=float, default=1, help="Power of the decay."
-    )
-    parser.add_argument(
-        "--start_lr", type=float, default=1e-8, help="Starting learning rate."
-    )
-    parser.add_argument(
-        "--end_lr", type=float, default=1e-8, help="Ending learning rate."
+        "--power_decay", type=float, default=-0.5, help="Power of the decay."
     )
     parser.add_argument(
         "--decay_forever",
         type=lambda s: s.lower().startswith("t"),
-        default=False,
+        default=True,
         help="Whether the decay should reach end_lr at the end of training, or in the limit to infinity",
     )
 
