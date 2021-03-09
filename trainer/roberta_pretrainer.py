@@ -123,8 +123,6 @@ def train(args):
     )
 
     # Get model
-    trainer.setup_saver()
-    trainer.setup_random()
     log.info("Building model...")
     model = get_model(args, bpe)
     model = trainer.setup_model(model, device)
@@ -152,6 +150,8 @@ def train(args):
     samples_till_eval = args.eval_per_n_samples
     epoch = sample_num // args.epoch_size
     step = 0
+    trainer.setup_saver()
+    trainer.setup_random()
     sample_num, samples_till_eval, epoch, step = trainer.setup_step(
         step_vars=(sample_num, samples_till_eval, epoch, step)
     )
