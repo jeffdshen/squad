@@ -360,6 +360,11 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
         context = eval_dict[str(qid)]["context"]
         spans = eval_dict[str(qid)]["spans"]
         uuid = eval_dict[str(qid)]["uuid"]
+        
+        # Skip if already answered (not N/A)
+        if str(qid) in pred_dict and pred_dict[str(qid)] == "":
+            continue
+
         if no_answer and (y_start == 0 or y_end == 0):
             pred_dict[str(qid)] = ""
             sub_dict[uuid] = ""

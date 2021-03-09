@@ -17,10 +17,10 @@ import shutil
 
 
 class Trainer:
-    def __init__(self):
+    def __init__(self, is_train=True):
         super().__init__()
         self.state_dict = None
-
+        self.is_train = is_train
 
     def setup(self, args):
         log = util.get_logger(args.save_dir, args.name)
@@ -34,7 +34,6 @@ class Trainer:
             self.args.name = args.name
             args = self.args
             log.info("Resuming from checkpoint: {}".format(checkpoint_path))
-
 
         self.args = args
 
@@ -77,9 +76,11 @@ class Trainer:
         if self.state_dict is not None:
             log.info("Reloading model...")
             model.load_state_dict(self.state_dict["model"])
-        elif args.load_path:
+        elif args.load_path or not self.is_train:
             log.info(f"Loading model from {args.load_path}...")
-            model, _ = ModelSaver.load_model(model, args.load_path, device)
+            model, _ = ModelSaver.load_model(
+                model, args.load_path, device, strict=(not self.is_train)
+            )
         model = nn.DataParallel(model, self.args.gpu_ids)
         model = model.to(device)
         self.model = model
@@ -114,11 +115,11 @@ class Trainer:
 
     def save_checkpoint(self, step_vars):
         ckpt_dict = {
-            "args" : self.args,
+            "args": self.args,
             "random": random.getstate(),
-            "np.random" : np.random.get_state(),
-            "torch.random" : torch.random.get_rng_state(),
-            "torch.cuda.random" : torch.cuda.get_rng_state_all(),
+            "np.random": np.random.get_state(),
+            "torch.random": torch.random.get_rng_state(),
+            "torch.cuda.random": torch.cuda.get_rng_state_all(),
             "model": self.model.module.state_dict(),
             "optimizer": self.optimizer.state_dict(),
             "scheduler": self.scheduler.state_dict(),
@@ -149,7 +150,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--seed", type=int, default=224, help="Random seed for reproducibility."
     )
-    
+
 
 class ModelSaver:
     """Class to save and load model checkpoints.
@@ -257,7 +258,7 @@ class ModelSaver:
                 pass
 
     @staticmethod
-    def load_model(model, checkpoint_path, device):
+    def load_model(model, checkpoint_path, device, strict):
         """Load model parameters from disk.
 
         Args:
@@ -270,7 +271,6 @@ class ModelSaver:
             step (int): Step at which checkpoint was saved.
         """
         ckpt_dict = torch.load(checkpoint_path, map_location=device)
-        model.load_state_dict(ckpt_dict["model"])
+        model.load_state_dict(ckpt_dict["model"], strict=strict)
         step = ckpt_dict["step"]
         return model, step
-

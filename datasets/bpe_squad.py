@@ -4,6 +4,7 @@ Includes MLM and QA tasks.
 Author:
     Jeffrey Shen
 """
+from numpy.core.shape_base import block
 import torch
 import torch.utils.data as data
 import numpy as np
@@ -148,3 +149,115 @@ def collate_fn(examples):
     # Group by tensor type
     x, y = zip(*examples)
     return torch.stack(x, dim=0), torch.stack(y, dim=0)
+
+
+class SQuAD(data.Dataset):
+    """Stanford Question Answering Dataset (SQuAD).
+
+    Each item in the dataset is a tuple with the following entries (in order):
+        - x: [CLS] context window [SEP] question
+        - y: start and end indices, adjusted to the context window
+        - c_padding_mask: mask out [SEP] question (True) or keep [CLS] context window (False)
+        - ids: ids for each entry
+
+    Args:
+        data_path (str): Path to .npz file containing pre-processed dataset.
+    """
+
+    def __init__(
+        self,
+        data_path,
+        block_size=512,
+        ignore_idx=-1,
+        padding_idx=0,
+        cls_idx=1,
+        sep_idx=2,
+        mask_idx=3,
+        use_v2=True,
+    ):
+        super(SQuAD, self).__init__()
+
+        self.block_size = block_size
+        self.ignore_idx = ignore_idx
+        self.padding_idx = padding_idx
+        self.cls_idx = cls_idx
+        self.sep_idx = sep_idx
+        self.mask_idx = mask_idx
+
+        dataset = np.load(data_path)
+        self.context_idxs = torch.from_numpy(dataset["context_idxs"]).long()
+        self.question_idxs = torch.from_numpy(dataset["ques_idxs"]).long()
+        self.y1s = torch.from_numpy(dataset["y1s"]).long()
+        self.y2s = torch.from_numpy(dataset["y2s"]).long()
+        self.ids = torch.from_numpy(dataset["ids"]).long()
+        self.valid_idxs = [
+            idx for idx in range(len(self.ids)) if use_v2 or self.y1s[idx].item() >= 0
+        ]
+
+    def __getitem__(self, idx):
+        idx = self.valid_idxs[idx]
+        example = (
+            self.context_idxs[idx],
+            self.question_idxs[idx],
+            self.y1s[idx],
+            self.y2s[idx],
+            self.ids[idx],
+        )
+
+        return example
+
+    def __len__(self):
+        return len(self.valid_idxs)
+
+    def get_sliding_window_collate(self, stride, randomize):
+        """
+        Gets a collate function which creates inputs at most the block size.
+        If randomize is True, we get a single random sliding window (for training/dev).
+        Otherwise, we keep all the sliding windows (for evaluation).
+        """
+
+        def sliding_window_collate(examples):
+            windows = []
+            for example in examples:
+                c, q, y1, y2, id = example
+                c_len = (c != self.padding_idx).sum()
+                q_len = (q != self.padding_idx).sum()
+
+                # We want to keep going so long as c_end = c_start + (block_size - q_len - 2)
+                # has not been at least c_len for the first time, i.e. c_end < c_len + stride.
+                # We also want to take at least one step.
+                c_range = range(0, max(1, c_len + q_len + 2 - self.block_size + stride), stride)
+                if randomize:
+                    c_start = random.sample(c_range, k=1)
+                    c_range = range(c_start, c_start + 1)
+    
+                for c_start in c_range:
+                    c_end = min(self.block_size - q_len - 2 + c_start, c_len)
+                    if y1 < c_start or y2 < c_start or y1 >= c_end or y2 >= c_end:
+                        y1 = -1
+                        y2 = -1
+                    else:
+                        y1 -= c_start
+                        y2 -= c_start
+                    windows.append((c[c_start:c_end], q[:q_len], y1, y2, id))
+
+            # Collate windows
+            max_len = max(len(window[0]) + len(window[1]) for window in windows)
+            assert max_len <= self.block_size
+            x = torch.full((len(windows), max_len), self.padding_idx, dtype=torch.long)
+            y = torch.zeros(len(windows), 2, dtype=torch.long)
+            c_padding_mask = torch.ones(len(windows), max_len, dtype=torch.bool)
+            ids = torch.zeros(len(windows), dtype=torch.long)
+            for i, window in enumerate(windows):
+                c, q, y1, y2, id = window
+                x[i][0] = self.cls_idx
+                x[i][1 : 1 + len(c)] = c
+                x[i][1 + len(c)] = self.sep_idx
+                x[i][2 + len(c) : 2 + len(c) + len(q)] = q
+                c_padding_mask[i][0: 1 + len(c)] = False
+                y[i][0] = y1 + 1
+                y[i][1] = y2 + 1
+                ids[i] = id
+            return x, y, c_padding_mask, ids
+
+        return sliding_window_collate

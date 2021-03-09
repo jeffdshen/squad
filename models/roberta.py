@@ -117,4 +117,8 @@ class RoBERTa(nn.Module):
 
     # (N, S, O), (N, O) -> (1, )
     def get_loss(self, scores, y):
-        return self.head.get_loss(scores, y, self.ignore_idx)
+        if self.ignore_idx is not None:
+            return self.head.get_loss(scores, y, self.ignore_idx)
+        else:
+            # HACK: ignore_idx is None for the QA head
+            return self.head.get_loss(scores, y)

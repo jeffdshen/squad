@@ -13,27 +13,30 @@ Author:
 
 import argparse
 
-from trainer import bidaf_trainer, glove_transformer_trainer
+from trainer import bidaf_trainer, glove_transformer_trainer, roberta_finetune
 import util
+
+
+def add_subparser(name, data_sub_dir, subparsers, parent_parser, module):
+    subparser = subparsers.add_parser(name, parents=[parent_parser])
+    module.add_test_args(subparser)
+    subparser.set_defaults(train=module.test)
+    subparser.set_defaults(data_sub_dir=data_sub_dir)
 
 
 def main():
     parser = argparse.ArgumentParser("Test a trained model on SQuAD")
-    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent = argparse.ArgumentParser(add_help=False)
 
-    util.add_data_args(parent_parser)
-    util.add_test_args(parent_parser)
+    util.add_data_args(parent)
+    util.add_test_args(parent)
     subparsers = parser.add_subparsers()
 
-    bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
-    bidaf_trainer.add_test_args(bidaf)
-    bidaf.set_defaults(test=bidaf_trainer.test)
-    bidaf.set_defaults(data_sub_dir="bidaf")
-
-    glove_transformer = subparsers.add_parser("glove_transformer", parents=[parent_parser])
-    glove_transformer_trainer.add_test_args(glove_transformer)
-    glove_transformer.set_defaults(test=glove_transformer_trainer.test)
-    glove_transformer.set_defaults(data_sub_dir="bidaf")
+    add_subparser("bidaf", "bidaf", subparsers, parent, bidaf_trainer)
+    add_subparser(
+        "glove_transformer", "bidaf", subparsers, parent, glove_transformer_trainer
+    )
+    add_subparser("roberta_finetune", "bpe", subparsers, parent, roberta_finetune)
 
     args = parser.parse_args()
 

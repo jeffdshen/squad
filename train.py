@@ -5,7 +5,12 @@ Author:
 """
 import argparse
 
-from trainer import bidaf_trainer, glove_transformer_trainer, roberta_pretrainer
+from trainer import (
+    bidaf_trainer,
+    glove_transformer_trainer,
+    roberta_pretrainer,
+    roberta_finetune,
+)
 import util
 
 
@@ -29,6 +34,7 @@ def main():
         "glove_transformer", "bidaf", subparsers, parent, glove_transformer_trainer
     )
     add_subparser("roberta_pretrain", "bpe", subparsers, parent, roberta_pretrainer)
+    add_subparser("roberta_finetune", "bpe", subparsers, parent, roberta_finetune)
 
     args = parser.parse_args()
     if args.metric_name == "NLL":
