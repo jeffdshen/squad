@@ -107,8 +107,6 @@ def train(args):
     trainer = base_trainer.Trainer()
     args, device = get_args(args)
     args, log, tbx = trainer.setup(args)
-    trainer.setup_saver()
-    trainer.setup_random()
 
     # Get BPE
     log.info("Loading BPE...")
@@ -125,6 +123,8 @@ def train(args):
     )
 
     # Get model
+    trainer.setup_saver()
+    trainer.setup_random()
     log.info("Building model...")
     model = get_model(args, bpe)
     model = trainer.setup_model(model, device)
