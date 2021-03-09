@@ -114,6 +114,7 @@ class Trainer:
 
     def save_checkpoint(self, step_vars):
         ckpt_dict = {
+            "args" : self.args,
             "random": random.getstate(),
             "np.random" : np.random.get_state(),
             "torch.random" : torch.random.get_rng_state(),
