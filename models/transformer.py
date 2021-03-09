@@ -266,6 +266,10 @@ class LMHead(nn.Module):
     # ((N, S, O), (N, S)) -> (1, )
     @staticmethod
     def get_loss(scores, y, ignore_idx):
+        # Swap the dimension back to original order for speed reasons
+        if not scores.is_contiguous():
+            scores = scores.transpose(0, 1)
+            y = y.transpose(0, 1)
         return F.cross_entropy(scores.transpose(1, -1), y, ignore_index=ignore_idx)
 
 
