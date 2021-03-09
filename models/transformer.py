@@ -246,7 +246,15 @@ class LMHead(nn.Module):
     # (N, S, O), (N, S) -> (N, S O)
     @staticmethod
     def mask_scores(x, padding_mask):
-        return x.masked_fill(padding_mask.unsqueeze(-1), float("-inf"))
+        # Swap the dimension back to original order for speed reasons
+        swap = not x.is_contiguous()
+        if swap:
+            x = x.transpose(0, 1)
+            padding_mask = padding_mask.transpose(0, 1)
+        masked = x.masked_fill(padding_mask.unsqueeze(-1), float("-inf"))
+        if swap:
+            return masked.transpose(0, 1)
+        return masked
 
     # (N, S, O) -> (N, S)
     @staticmethod
