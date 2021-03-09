@@ -130,7 +130,7 @@ class Trainer:
         torch.save(ckpt_dict, checkpoint_path)
 
     def save_best(self, step, metric_val):
-        self.saver.save(step, self.model.module, metric_val, self.device)
+        self.saver.save(step, self.model.module, metric_val)
 
 
 def add_train_args(parser):
