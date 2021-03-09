@@ -7,7 +7,6 @@ Author:
 
 
 import numpy as np
-import random
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -16,7 +15,6 @@ import torch.utils.data as data
 import torch.cuda.amp as amp
 
 from collections import OrderedDict
-from json import dumps
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
@@ -25,19 +23,13 @@ from os.path import join
 from models import RoBERTa
 from datasets.bpe_squad import SQuAD
 from preprocess.bpe import BPE
+import eval
 import trainer.trainer as base_trainer
 import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
 import trainer.scheduler as sched
-from torchinfo import summary
 
-import eval
-import trainer.util as util
-import trainer.stats as stats
-import models.transformer as T
-import trainer.scheduler as sched
-from torchinfo import summary
 
 
 def add_special_tokens(args):
