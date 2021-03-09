@@ -4,7 +4,6 @@ Author:
     Jeffrey Shen
 """
 
-import numpy as np
 import random
 import torch
 import torch.nn as nn
@@ -15,8 +14,6 @@ import torch.cuda.amp as amp
 
 
 from collections import OrderedDict
-from json import dumps
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from ujson import load as json_load
 
@@ -28,7 +25,6 @@ import trainer.util as util
 import trainer.stats as stats
 import models.transformer as T
 import trainer.scheduler as sched
-from torchinfo import summary
 
 
 def add_special_tokens(args):
