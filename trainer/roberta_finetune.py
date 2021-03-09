@@ -259,7 +259,7 @@ def evaluate(model, data_loader, device, eval_file, args):
             # Get F1 and EM scores
             p1, p2 = model.module.get_prob(scores).split(1, dim=-1)
             p1, p2 = p1.squeeze(-1), p2.squeeze(-1)
-            starts, ends = util.discretize(p1, p2, args.max_len, args.use_squad_v2)
+            starts, ends = util.discretize(p1, p2, args.max_ans_len, args.use_squad_v2)
 
             # Log info
             progress_bar.update(batch_size)
