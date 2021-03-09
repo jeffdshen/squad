@@ -4,7 +4,6 @@ Includes MLM and QA tasks.
 Author:
     Jeffrey Shen
 """
-from numpy.core.shape_base import block
 import torch
 import torch.utils.data as data
 import numpy as np
