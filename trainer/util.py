@@ -339,7 +339,9 @@ def discretize(p_start, p_end, max_len=15, no_answer=False):
     return start_idxs, end_idxs
 
 
-def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
+def convert_tokens(
+    eval_dict, qa_id, y_start_list, y_end_list, no_answer, c_starts=None
+):
     """Convert predictions to tokens from the context.
 
     Args:
@@ -356,11 +358,14 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
     """
     pred_dict = {}
     sub_dict = {}
-    for qid, y_start, y_end in zip(qa_id, y_start_list, y_end_list):
+    if c_starts is None:
+        c_starts = [0] * len(y_start_list)
+
+    for qid, y_start, y_end, c_start in zip(qa_id, y_start_list, y_end_list, c_starts):
         context = eval_dict[str(qid)]["context"]
         spans = eval_dict[str(qid)]["spans"]
         uuid = eval_dict[str(qid)]["uuid"]
-        
+
         # Skip if already answered (not N/A)
         if str(qid) in pred_dict and pred_dict[str(qid)] == "":
             continue
@@ -371,6 +376,8 @@ def convert_tokens(eval_dict, qa_id, y_start_list, y_end_list, no_answer):
         else:
             if no_answer:
                 y_start, y_end = y_start - 1, y_end - 1
+            y_start += c_start
+            y_end += c_start
             start_idx = spans[y_start][0]
             end_idx = spans[y_end][1]
             pred_dict[str(qid)] = context[start_idx:end_idx]

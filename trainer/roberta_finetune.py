@@ -31,7 +31,6 @@ import models.transformer as T
 import trainer.scheduler as sched
 
 
-
 def add_special_tokens(args):
     args.ignore_idx = -1
     args.padding_idx = 0
@@ -169,7 +168,7 @@ def train(args):
         for tags, params in model.named_parameters():
             tbx.add_histogram(tags, params.data, epoch)
         with torch.enable_grad(), tqdm(total=len(train_loader.dataset)) as progress_bar:
-            for x, y, c_padding_mask, ids in train_loader:
+            for x, y, c_padding_mask, _, _ in train_loader:
                 batch_size = x.size(0)
                 loss, loss_val, _ = forward(x, y, c_padding_mask, args, device, model)
                 loss = loss / args.gradient_accumulation
@@ -251,7 +250,7 @@ def evaluate(model, data_loader, device, eval_file, args):
     with open(eval_file, "r") as fh:
         gold_dict = json_load(fh)
     with torch.no_grad():
-        for x, y, c_padding_mask, ids in data_loader:
+        for x, y, c_padding_mask, c_starts, ids in data_loader:
             batch_size = x.size(0)
             _, loss_val, scores = forward(x, y, c_padding_mask, args, device, model)
             nll_meter.update(loss_val, batch_size)
@@ -267,12 +266,13 @@ def evaluate(model, data_loader, device, eval_file, args):
                 starts.tolist(),
                 ends.tolist(),
                 args.use_squad_v2,
+                c_starts.tolist(),
             )
             pred_dict.update(preds)
 
     model.train()
 
-    results = {"NLL" : nll_meter.avg}
+    results = {"NLL": nll_meter.avg}
     results.update(eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2))
     return results, pred_dict
 
@@ -345,7 +345,9 @@ def test(args):
     # Get data loader
     log.info("Building dataset...")
     record_file = vars(args)[f"{args.split}_record_file"]
-    dataset, data_loader = get_dataset(args, record_file, shuffle=False, randomize=False)
+    dataset, data_loader = get_dataset(
+        args, record_file, shuffle=False, randomize=False
+    )
 
     # Get model
     log.info("Building model...")
@@ -364,7 +366,7 @@ def test(args):
     with open(eval_file, "r") as fh:
         gold_dict = json_load(fh)
     with torch.no_grad(), tqdm(total=len(dataset)) as progress_bar:
-        for x, y, c_padding_mask, ids in data_loader:
+        for x, y, c_padding_mask, c_starts, ids in data_loader:
             batch_size = x.size(0)
             _, loss_val, scores = forward(x, y, c_padding_mask, args, device, model)
             nll_meter.update(loss_val, batch_size)
@@ -386,21 +388,16 @@ def test(args):
                 starts.tolist(),
                 ends.tolist(),
                 args.use_squad_v2,
+                c_starts.tolist(),
             )
             pred_dict.update(idx2pred)
             sub_dict.update(uuid2pred)
 
     # Log results (except for test set, since it does not come with labels)
     if args.split != "test":
-        results = eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2)
-        results_list = [
-            ("NLL", nll_meter.avg),
-            ("F1", results["F1"]),
-            ("EM", results["EM"]),
-        ]
-        if args.use_squad_v2:
-            results_list.append(("AvNA", results["AvNA"]))
-        results = OrderedDict(results_list)
+
+        results = {"NLL": nll_meter.avg}
+        results.update(eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2))
 
         # Log to console
         results_str = ", ".join(f"{k}: {v:05.2f}" for k, v in results.items())

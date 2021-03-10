@@ -240,7 +240,7 @@ class SQuAD(data.Dataset):
                     else:
                         y1 -= c_start
                         y2 -= c_start
-                    windows.append((c[c_start:c_end], q[:q_len], y1, y2, id))
+                    windows.append((c[c_start:c_end], q[:q_len], y1, y2, c_start, id))
 
             # Collate windows
             max_len = max(len(window[0]) + len(window[1]) + 2 for window in windows)
@@ -248,9 +248,10 @@ class SQuAD(data.Dataset):
             x = torch.full((len(windows), max_len), self.padding_idx, dtype=torch.long)
             y = torch.zeros(len(windows), 2, dtype=torch.long)
             c_padding_mask = torch.ones(len(windows), max_len, dtype=torch.bool)
+            c_starts = torch.zeros(len(windows), dtype=torch.long)
             ids = torch.zeros(len(windows), dtype=torch.long)
             for i, window in enumerate(windows):
-                c, q, y1, y2, id = window
+                c, q, y1, y2, c_start, id = window
                 x[i, 0] = self.cls_idx
                 x[i, 1 : 1 + len(c)] = c
                 x[i, 1 + len(c)] = self.sep_idx
@@ -258,7 +259,8 @@ class SQuAD(data.Dataset):
                 c_padding_mask[i][0 : 1 + len(c)] = False
                 y[i, 0] = y1 + 1
                 y[i, 1] = y2 + 1
+                c_starts[i] = c_start
                 ids[i] = id
-            return x, y, c_padding_mask, ids
+            return x, y, c_padding_mask, c_starts, ids
 
         return sliding_window_collate
