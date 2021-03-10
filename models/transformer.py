@@ -219,8 +219,8 @@ class LinearQAHead(nn.Module):
 
     # ((N, S, O), (N, O)) -> (1,)
     @staticmethod
-    def get_loss(scores, y):
-        return F.cross_entropy(scores, y)
+    def get_loss(scores, y, weight=None):
+        return F.cross_entropy(scores, y, weight=weight)
 
 
 class LMHead(nn.Module):

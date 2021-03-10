@@ -170,7 +170,7 @@ def train(args):
         with torch.enable_grad(), tqdm(total=len(train_loader.dataset)) as progress_bar:
             for x, y, c_padding_mask, _, _ in train_loader:
                 batch_size = x.size(0)
-                loss, loss_val, _ = forward(x, y, c_padding_mask, args, device, model)
+                loss, loss_val, _ = forward(x, y, c_padding_mask, args, device, model, is_train=True)
                 loss = loss / args.gradient_accumulation
 
                 # Backward
@@ -225,7 +225,7 @@ def train(args):
                     )
 
 
-def forward(x, y, c_padding_mask, args, device, model, autocast=True):
+def forward(x, y, c_padding_mask, args, device, model, is_train=False, autocast=True):
     # Setup for forward
     x = x.to(device)
     padding_mask = T.get_padding_mask(x, args.padding_idx)
@@ -236,7 +236,11 @@ def forward(x, y, c_padding_mask, args, device, model, autocast=True):
         c_padding_mask = c_padding_mask.to(device)
         scores = model.module.mask_scores(scores, c_padding_mask)
         y = y.to(device)
-        loss = model.module.get_loss(scores, y)
+        weight = None
+        if is_train:
+            weight = torch.ones(scores.size(1), device=device, dtype=torch.float)
+            weight[0] = args.na_class_weight
+        loss = model.module.get_loss(scores, y, weight=weight)
         loss_val = loss.item() * 2
 
     return loss, loss_val, scores
@@ -329,6 +333,13 @@ def add_train_args(parser):
         type=float,
         default=5.0,
         help="Maximum gradient norm for gradient clipping.",
+    )
+
+    parser.add_argument(
+        "--na_class_weight",
+        type=float,
+        default=1.5,
+        help="Class weight for the N/A answer, all others are given 1.0.",
     )
 
 
