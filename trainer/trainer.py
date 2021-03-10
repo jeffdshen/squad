@@ -26,7 +26,7 @@ class Trainer:
         log = util.get_logger(args.save_dir, args.name)
         tbx = SummaryWriter(args.save_dir)
 
-        if args.resume_dir:
+        if self.is_train and args.resume_dir:
             checkpoint_path = os.path.join(args.resume_dir, "checkpoint.pth.tar")
             self.state_dict = torch.load(checkpoint_path)
             self.args = self.state_dict["args"]
@@ -39,11 +39,12 @@ class Trainer:
 
         log.info(f"Args: {dumps(vars(args), indent=4, sort_keys=True)}")
 
-        log.info(f"Using random seed {args.seed}...")
-        random.seed(args.seed)
-        np.random.seed(args.seed)
-        torch.manual_seed(args.seed)
-        torch.cuda.manual_seed_all(args.seed)
+        if self.is_train:
+            log.info(f"Using random seed {args.seed}...")
+            random.seed(args.seed)
+            np.random.seed(args.seed)
+            torch.manual_seed(args.seed)
+            torch.cuda.manual_seed_all(args.seed)
 
         self.log = log
         self.tbx = tbx
