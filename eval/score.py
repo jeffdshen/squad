@@ -12,6 +12,7 @@ from collections import Counter
 
 def eval_dicts(gold_dict, pred_dict, no_answer):
     avna = f1 = em = total = 0
+    total_na = 0, na = 0, f1_a = 0, em_a = 0
     for key, value in pred_dict.items():
         total += 1
         ground_truths = gold_dict[key]["answers"]
@@ -20,11 +21,21 @@ def eval_dicts(gold_dict, pred_dict, no_answer):
         f1 += metric_max_over_ground_truths(compute_f1, prediction, ground_truths)
         if no_answer:
             avna += compute_avna(prediction, ground_truths)
+            if ground_truths:
+                em_a += metric_max_over_ground_truths(compute_em, prediction, ground_truths)
+                f1_a += metric_max_over_ground_truths(compute_f1, prediction, ground_truths)
+            else:
+                total_na += 1
+                na += compute_avna(prediction, ground_truths)
 
-    eval_dict = {"EM": 100.0 * em / total, "F1": 100.0 * f1 / total}
+
+    eval_dict = {"F1": 100.0 * f1 / total, "EM": 100.0 * em / total}
 
     if no_answer:
         eval_dict["AvNA"] = 100.0 * avna / total
+        eval_dict["F1_A"] = 100.0 * f1_a / (total - total_na)
+        eval_dict["EM_A"] = 100.0 * em_a / (total - total_na)
+        eval_dict["NA"] = 100.0 * na / total_na
 
     return eval_dict
 

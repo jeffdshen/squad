@@ -272,16 +272,8 @@ def evaluate(model, data_loader, device, eval_file, args):
 
     model.train()
 
-    results = eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2)
-    results_list = [
-        ("NLL", nll_meter.avg),
-        ("F1", results["F1"]),
-        ("EM", results["EM"]),
-    ]
-    if args.use_squad_v2:
-        results_list.append(("AvNA", results["AvNA"]))
-    results = OrderedDict(results_list)
-
+    results = {"NLL" : nll_meter.avg}
+    results.update(eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2))
     return results, pred_dict
 
 
