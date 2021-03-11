@@ -314,9 +314,7 @@ def sample_mlm_pred(model, x, y, scores, k, args):
     y[~mask] = x[~mask]
 
     x = x.repeat(1, 1, k)
-    x[mask.unsqueeze(-1).expand_as(x)] = model.sample(
-        scores[mask.unsqueeze(-1).expand_as(scores)], k, alpha=args.sample_temperature
-    )
+    x[mask, :] = model.sample(scores[mask, :], k, alpha=args.sample_temperature)
     return x.permute(-1, 0, 1), y
 
 
