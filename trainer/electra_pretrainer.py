@@ -176,7 +176,7 @@ def train(args):
                 del scores
 
                 loss_val_e = 0
-                for i in x.size(0):
+                for i in range(args.mlm_samples):
                     loss, loss_val_item, _ = forward(x[i], y, args, device, model)
                     loss = loss / args.gradient_accumulation / (args.mlm_samples + 1)
                     loss_val_e += loss_val_item / x.size(0)
