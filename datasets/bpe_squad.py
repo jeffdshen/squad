@@ -104,44 +104,41 @@ class MLM(data.IterableDataset):
         n_samples = 0
         while True:
             dataset_size = self.context_idxs.size(0)
-            ids = list(
-                zip(range(worker_id, dataset_size, num_workers), [0] * dataset_size)
-            ) + list(
-                zip(range(worker_id, dataset_size, num_workers), [1] * dataset_size)
-            )
+            ids = list(range(worker_id, dataset_size, num_workers))
 
             random.shuffle(ids)
-            for i, j in ids:
-                if j == 0:
-                    sample = self.context_idxs[i]
-                else:
-                    sample = self.question_idxs[i]
-
-                sample_length = (sample != self.padding_idx).sum().item()
-                sample_index = 0
-                while sample_index < sample_length:
-                    fill = min(sample_length - sample_index, next.size(0) - next_index)
-                    next[next_index : next_index + fill] = sample[
-                        sample_index : sample_index + fill
-                    ]
-                    next_index += fill
-                    sample_index += fill
-
-                    if next_index >= next.size(0):
-                        x = next.clone().detach()
-                        y = next.clone().detach()
-                        yield self.mask(x, y)
-                        next = torch.full(
-                            (self.block_size,), self.padding_idx, dtype=torch.long
-                        )
-                        next[0] = self.cls_idx
-                        next_index = 1
-                        n_samples += 1
-                        if n_samples >= epoch_size:
-                            return
+            for i in ids:
+                for j in range(2):
+                    if j == 0:
+                        sample = self.context_idxs[i]
                     else:
-                        next[next_index] = self.sep_idx
-                        next_index += 1
+                        sample = self.question_idxs[i]
+
+                    sample_length = (sample != self.padding_idx).sum().item()
+                    sample_index = 0
+                    while sample_index < sample_length:
+                        fill = min(sample_length - sample_index, next.size(0) - next_index)
+                        next[next_index : next_index + fill] = sample[
+                            sample_index : sample_index + fill
+                        ]
+                        next_index += fill
+                        sample_index += fill
+
+                        if next_index >= next.size(0):
+                            x = next.clone().detach()
+                            y = next.clone().detach()
+                            yield self.mask(x, y)
+                            next = torch.full(
+                                (self.block_size,), self.padding_idx, dtype=torch.long
+                            )
+                            next[0] = self.cls_idx
+                            next_index = 1
+                            n_samples += 1
+                            if n_samples >= epoch_size:
+                                return
+                        else:
+                            next[next_index] = self.sep_idx
+                            next_index += 1
 
 
 def collate_fn(examples):
