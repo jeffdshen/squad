@@ -107,6 +107,10 @@ class RoBERTa(nn.Module):
     def get_top(self, x):
         return self.head.get_top(x)
 
+    # (N, S, O) -> (N, S, K)
+    def sample(self, x, k, alpha=1.0):
+        return self.head.sample(x, k, alpha=alpha)
+
     # (N, S, O) -> (N, S, O*)
     def get_log_prob(self, x):
         return self.head.get_log_prob(x)
