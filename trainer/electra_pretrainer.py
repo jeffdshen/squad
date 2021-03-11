@@ -162,9 +162,10 @@ def train(args):
             tbx.add_histogram(tags, params.data, epoch)
         with torch.enable_grad(), tqdm(total=len(train_loader.dataset)) as progress_bar:
             for x, y in train_loader:
+                loss_weight = args.gradient_accumulation * (args.mlm_samples * args.lambda_weight + 1)
                 batch_size = x.size(0)
                 loss, loss_val, scores = forward(x, y, args, device, model)
-                loss = loss / args.gradient_accumulation / (args.mlm_samples + 1)
+                loss = loss / loss_weight
                 scaler.scale(loss).backward()
 
                 # ELECTRA MLM
@@ -178,7 +179,7 @@ def train(args):
                 loss_val_e = 0
                 for i in range(args.mlm_samples):
                     loss, loss_val_item, _ = forward(x[i], y, args, device, model)
-                    loss = loss / args.gradient_accumulation / (args.mlm_samples + 1)
+                    loss = loss / loss_weight * args.lambda_weight
                     loss_val_e += loss_val_item / x.size(0)
                     scaler.scale(loss).backward()
 
@@ -312,7 +313,7 @@ def sample_mlm_pred(model, x, y, scores, k, args):
     scores = scores.clone().detach()
     mask = y != args.ignore_idx
     y[~mask] = x[~mask]
-    
+
     # Just in case, ignore the padding idx
     padding_mask = T.get_padding_mask(x, args.padding_idx)
     y[padding_mask] = args.ignore_idx
@@ -389,6 +390,9 @@ def add_electra_mlm_args(parser):
     )
     parser.add_argument(
         "--mlm_samples", type=int, default=3, help="How many to sample for replace MLM"
+    )
+    parser.add_argument(
+        "--lambda_weight", type=float, default=16, help="Multiplier for the replace MLM"
     )
 
 
