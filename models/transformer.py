@@ -261,12 +261,12 @@ class LMHead(nn.Module):
     def get_top(x):
         return torch.argmax(x, dim=-1)
 
-    # (N, S, O) -> (N, S, K)
+    # (N, O) -> (N, K)
     @staticmethod
     def sample(x, k, alpha=1.0):
         s = F.softmax(x / alpha, dim=-1)
         m = torch.multinomial(s.view(-1, s.size(-1)), k, replacement=True) 
-        return m.view(s.size(0), s.size(1), k)
+        return m.view(s.size(0), k)
 
     # (N, S, O) -> (N, S, O*)
     @staticmethod

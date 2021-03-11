@@ -107,7 +107,8 @@ class RoBERTa(nn.Module):
     def get_top(self, x):
         return self.head.get_top(x)
 
-    # (N, S, O) -> (N, S, K)
+    # (M, O) -> (M, K). M < N x S
+    # Since this gets masked prior, N, S gets folded into 1 dim.
     def sample(self, x, k, alpha=1.0):
         return self.head.sample(x, k, alpha=alpha)
 
