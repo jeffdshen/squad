@@ -312,9 +312,15 @@ def sample_mlm_pred(model, x, y, scores, k, args):
     scores = scores.clone().detach()
     mask = y != args.ignore_idx
     y[~mask] = x[~mask]
+    
+    # Just in case, ignore the padding idx
+    padding_mask = T.get_padding_mask(x, args.padding_idx)
+    y[padding_mask] = args.ignore_idx
 
     x = x.unsqueeze(-1)
     x = x.repeat(1, 1, k)
+    # Don't choose the padding idx!
+    scores[:, :, args.padding_idx] = float("-inf")
     x[mask, :] = model.sample(scores[mask, :], k, alpha=args.sample_temperature)
     return x.permute(-1, 0, 1), y
 
