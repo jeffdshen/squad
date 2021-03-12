@@ -21,7 +21,7 @@ def add_subparser(name, data_sub_dir, subparsers, parent_parser, module):
     subparser = subparsers.add_parser(name, parents=[parent_parser])
     module.add_test_args(subparser)
     subparser.set_defaults(test=module.test)
-    subparser.set_defaults(data_sub_dir=data_sub_dir)
+    subparser.add_argument("--data_sub_dir", type=str, default=data_sub_dir)
 
 
 def main():

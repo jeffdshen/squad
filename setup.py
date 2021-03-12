@@ -17,6 +17,13 @@ from preprocess import bidaf_setup, bpe_setup
 import util
 
 
+def add_subparser(name, data_sub_dir, subparsers, parent_parser, module):
+    subparser = subparsers.add_parser(name, parents=[parent_parser])
+    module.add_args(subparser)
+    subparser.set_defaults(setup=module.setup)
+    subparser.add_argument("--data_sub_dir", type=str, default=data_sub_dir)
+
+
 def main():
     parser = argparse.ArgumentParser("Download and pre-process SQuAD")
     parent_parser = argparse.ArgumentParser(add_help=False)
@@ -25,15 +32,8 @@ def main():
 
     subparsers = parser.add_subparsers()
 
-    bidaf = subparsers.add_parser("bidaf", parents=[parent_parser])
-    bidaf_setup.add_args(bidaf)
-    bidaf.set_defaults(setup=bidaf_setup.setup)
-    bidaf.set_defaults(data_sub_dir="bidaf")
-
-    bpe = subparsers.add_parser("bpe", parents=[parent_parser])
-    bpe_setup.add_args(bpe)
-    bpe.set_defaults(setup=bpe_setup.setup)
-    bpe.set_defaults(data_sub_dir="bpe")
+    add_subparser("bidaf", "bidaf", subparsers, parent_parser, bidaf_setup)
+    add_subparser("bpe", "bpe", subparsers, parent_parser, bpe_setup)
 
     args = parser.parse_args()
     args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
