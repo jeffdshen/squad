@@ -37,10 +37,10 @@ def eval_dicts(gold_dict, pred_dict, no_answer):
 
     if no_answer:
         eval_dict["AvNA"] = 100.0 * avna / total
-        eval_dict["F1_A"] = 100.0 * f1_a / a
-        eval_dict["EM_A"] = 100.0 * em_a / a
-        eval_dict["A"] = 100.0 * a / (total - total_na)
-        eval_dict["NA"] = 100.0 * na / total_na
+        eval_dict["F1_A"] = 100.0 * f1_a / a if a > 0 else 0.0
+        eval_dict["EM_A"] = 100.0 * em_a / a if a > 0 else 0.0
+        eval_dict["A"] = 100.0 * a / (total - total_na) if (total - total_na > 0) else 100.0
+        eval_dict["NA"] = 100.0 * na / total_na if total_na > 0 else 100.0
 
     return eval_dict
 
