@@ -500,8 +500,7 @@ def add_train_args(parser):
     parser.add_argument(
         "--metric_name",
         type=str,
-        default="NLL_E",
-        choices=("NLL", "NLL_E"),
+        default="NLL_3",
         help="Name of dev metric to determine best checkpoint.",
     )
     parser.add_argument(

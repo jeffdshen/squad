@@ -10,6 +10,7 @@ from trainer import (
     glove_transformer_trainer,
     roberta_pretrainer,
     electra_pretrainer,
+    didae_pretrainer,
     roberta_finetune,
 )
 import util
@@ -36,13 +37,14 @@ def main():
     )
     add_subparser("roberta_pretrain", "bpe", subparsers, parent, roberta_pretrainer)
     add_subparser("electra_pretrain", "bpe", subparsers, parent, electra_pretrainer)
+    add_subparser("didae_pretrain", "bpe", subparsers, parent, didae_pretrainer)
     add_subparser("roberta_finetune", "bpe", subparsers, parent, roberta_finetune)
 
     args = parser.parse_args()
-    if args.metric_name in ("NLL", "NLL_E"):
+    if args.metric_name.startswith("NLL"):
         # Best checkpoint is the one that minimizes negative log-likelihood
         args.maximize_metric = False
-    elif args.metric_name in ("EM", "F1"):
+    elif args.metric_name in ("EM", "F1") or args.metric_name.startswith("acc"):
         # Best checkpoint is the one that maximizes EM or F1
         args.maximize_metric = True
     else:
