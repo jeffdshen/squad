@@ -175,8 +175,7 @@ def train(args):
                 loss_val_didae = {}
                 for i in range(args.mlm_samples):
                     x, y = x.to(device), y.to(device)
-                    cls_idx = args.cls_idx if i < args.didae_cls else args.sep_idx
-                    x, y = sample_mlm_pred(model.module, x, y, scores, cls_idx, args)
+                    x, y = sample_mlm_pred(model.module, x, y, scores, i, args)
                     # Try to free up scores
                     del scores
 
@@ -321,7 +320,7 @@ def get_mlm_pred(model, x, y, scores, args):
     return pred, ques, ans, acc
 
 
-def sample_mlm_pred(model, x, y, scores, cls_idx, args):
+def sample_mlm_pred(model, x, y, scores, idx, args):
     y = y.clone().detach()
     x = x.clone().detach()
     scores = scores.clone().detach()
@@ -340,9 +339,13 @@ def sample_mlm_pred(model, x, y, scores, cls_idx, args):
         alpha=args.sample_temperature,
     ).squeeze(-1)
 
-    hint_mask = torch.rand(x.size(), device=x.device)
-    hint_mask = hint_mask < args.hint_prob
-    x[hint_mask] = y[hint_mask]
+    # Only give hints after first iteration
+    if idx > 0:
+        hint_mask = torch.rand(x.size(), device=x.device)
+        hint_mask = hint_mask < args.hint_prob
+        x[hint_mask] = y[hint_mask]
+
+    cls_idx = args.cls_idx if idx < args.didae_cls else args.sep_idx
     x[:, 0] = args.cls_idx
     y[:, 0] = cls_idx
     return x, y
@@ -371,8 +374,7 @@ def evaluate(model, data_loader, device, args):
 
             # DIDAE
             for i in range(args.mlm_samples):
-                cls_idx = args.cls_idx if i < args.didae_cls else args.sep_idx
-                x, y = sample_mlm_pred(model.module, x, y, scores, cls_idx, args)
+                x, y = sample_mlm_pred(model.module, x, y, scores, i, args)
                 # Try to free up scores
                 del scores
 
