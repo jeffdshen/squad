@@ -354,12 +354,12 @@ def sample_mlm_pred(model, x, y, scores, idx, args):
 def evaluate(model, data_loader, device, args):
     nll_meter = stats.AverageMeter()
     acc_meter = stats.AverageMeter()
-    nll_didae_meter = {i: stats.AverageMeter() for i in args.mlm_samples}
-    acc_didae_meter = {i: stats.AverageMeter() for i in args.mlm_samples}
+    nll_didae_meter = {i: stats.AverageMeter() for i in range(args.mlm_samples)}
+    acc_didae_meter = {i: stats.AverageMeter() for i in range(args.mlm_samples)}
 
     model.eval()
     preds = []
-    preds_didae = {i: [] for i in args.mlm_samples}
+    preds_didae = {i: [] for i in range(args.mlm_samples)}
     with torch.no_grad():
         for x, y in data_loader:
             batch_size = x.size(0)
