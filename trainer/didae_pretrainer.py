@@ -383,7 +383,7 @@ def evaluate(model, data_loader, device, args):
 
                 pred, ques, ans, acc = get_mlm_pred(model.module, x, y, scores, args)
                 acc_didae_meter[i].update(acc, batch_size)
-                preds_didae += zip(pred, ques, ans)
+                preds_didae[i] += zip(pred, ques, ans)
 
     model.train()
 
