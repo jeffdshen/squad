@@ -333,11 +333,8 @@ def sample_mlm_pred(model, x, y, scores, idx, args):
 
     # Don't choose the padding idx!
     scores[:, :, args.padding_idx] = float("-inf")
-    x[mask] = model.sample(
-        scores[mask, :],
-        1,
-        alpha=args.sample_temperature,
-    ).squeeze(-1)
+    alpha = args.sample_temperature if idx > 0 else args.mlm_sample_temperature
+    x[mask] = model.sample(scores[mask, :], 1, alpha=alpha).squeeze(-1)
 
     # Only give hints after first iteration
     if idx > 0:
@@ -418,7 +415,16 @@ def add_mlm_args(parser):
 
 def add_didae_mlm_args(parser):
     parser.add_argument(
-        "--sample_temperature", type=float, default=2.0, help="Sample temperature."
+        "--mlm_sample_temperature",
+        type=float,
+        default=2.0,
+        help="Sample temperature (after mlm).",
+    )
+    parser.add_argument(
+        "--sample_temperature",
+        type=float,
+        default=0.5,
+        help="Sample temperature (after didae).",
     )
     parser.add_argument(
         "--mlm_samples",
