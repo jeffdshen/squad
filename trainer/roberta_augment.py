@@ -398,6 +398,12 @@ def add_train_test_args(parser):
         help="Batch size per GPU. Scales automatically when \
                               multiple GPUs are available.",
     )
+    parser.add_argument(
+        "--use_squad_v2",
+        type=lambda s: s.lower().startswith("t"),
+        default=True,
+        help="Whether to use SQuAD 2.0 (unanswerable) questions.",
+    )
 
     # Model params
     parser.add_argument(
