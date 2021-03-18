@@ -239,8 +239,10 @@ def sample_mlm_pred(model, x, y, scores, args):
     ans[~mask] = x[~mask]
 
     pred = x.clone().detach()
-    pred[mask] = model.sample(scores[mask, :], 1, alpha=args.sample_temperature).squeeze(-1)
-    
+    pred[mask] = model.sample(
+        scores[mask, :], 1, alpha=args.sample_temperature
+    ).squeeze(-1)
+
     acc = (pred[mask] == y[mask]).float().mean().item()
 
     ans = ans[:, 1:].detach().cpu().numpy()
@@ -255,7 +257,9 @@ def augment(model, data_loader, device, bpe, args):
 
     model.eval()
     augs = {}
-    with torch.no_grad():
+    with torch.no_grad(), tqdm(
+        total=len(data_loader.dataset) * args.augment_samples
+    ) as progress_bar:
         for _ in range(args.augment_samples):
             for x, y, c, ids in data_loader:
                 batch_size = x.size(0)
@@ -266,6 +270,8 @@ def augment(model, data_loader, device, bpe, args):
                 y = y.to(device)
                 pred, ans, acc = sample_mlm_pred(model.module, x, y, scores, args)
                 acc_meter.update(acc, batch_size)
+                progress_bar.update(batch_size)
+                progress_bar.set_postfix(NLL=nll_meter.avg)
 
                 for i, id in enumerate(ids.tolist()):
                     if str(id) not in augs:
