@@ -18,8 +18,8 @@ from zipfile import ZipFile
 def load_features(out_file):
     dataset = np.load(out_file)
     return (
-        dataset["context_idxs"].tolist(),
-        dataset["ques_idxs"].tolist(),
+        dataset["context_idxs"],
+        dataset["ques_idxs"],
         dataset["y1s"],
         dataset["y2s"],
         dataset["ids"],
@@ -146,7 +146,9 @@ def preprocess(args):
     # Process training set and use it to construct bpe
     bpe = get_bpe(args)
 
-    train_meta = build_features("train", args.train_record_file, args.train_aug_file, bpe)
+    train_meta = build_features(
+        "train", args.train_record_file, args.train_aug_file, bpe
+    )
     print("Meta: {}".format(train_meta))
 
 
