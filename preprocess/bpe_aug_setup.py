@@ -39,7 +39,7 @@ def unzip(output_path):
     if os.path.exists(zip_path):
         print(f"Unzipping {zip_path}...")
         with ZipFile(zip_path, "r") as zip_fh:
-            zip_fh.extract(zip_fh.infolist()[0], output_path)
+            zip_fh.extractall(os.path.dirname(output_path))
 
 
 def build_features(data_type, out_file, aug_file, bpe):
