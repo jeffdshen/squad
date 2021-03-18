@@ -234,13 +234,14 @@ def sample_mlm_pred(model, x, y, scores, args):
     scores[:, :, args.sep_idx] = float("-inf")
     scores[:, :, args.mask_idx] = float("-inf")
 
-    pred = model.sample(scores, 1, alpha=args.sample_temperature).squeeze(-1)
     ans = y.clone().detach()
     mask = y != args.ignore_idx
     ans[~mask] = x[~mask]
 
+    pred = x.clone.detach()
+    pred[mask] = model.sample(scores[mask, :], 1, alpha=args.sample_temperature).squeeze(-1)
+    
     acc = (pred[mask] == y[mask]).float().mean().item()
-    pred[~mask] = x[~mask]
 
     ans = ans[:, 1:].detach().cpu().numpy()
     pred = pred[:, 1:].detach().cpu().numpy()
