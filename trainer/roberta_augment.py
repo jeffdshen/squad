@@ -41,6 +41,10 @@ def get_args(args):
 
     args.batch_size_per_gpu = args.batch_size
     args.batch_size *= max(1, len(args.gpu_ids))
+    return args, device
+
+
+def get_num_steps(args):
     args.num_steps = args.epoch_size // args.batch_size // args.gradient_accumulation
     if args.num_epochs >= 0:
         args.num_steps *= args.num_epochs
@@ -48,7 +52,7 @@ def get_args(args):
     if args.decay_forever:
         args.num_steps = float("inf")
 
-    return args, device
+    return args.num_steps
 
 
 def get_bpe(args):
@@ -117,6 +121,8 @@ def train(args):
     dev_dataset, dev_loader = get_dataset(
         args, args.train_record_file, bpe, shuffle=False
     )
+    args.epoch_size = len(train_dataset)
+    log.info("Train has {} examples".format(args.epoch_size))
 
     # Get model
     log.info("Building model...")
@@ -132,6 +138,8 @@ def train(args):
         weight_decay=args.l2_wd,
     )
 
+    get_num_steps(args)
+    log.info("Scheduler will decay over {} steps".format(args.num_steps))
     scheduler = sched.get_linear_warmup_power_decay_scheduler(
         optimizer, args.warmup_steps, args.num_steps, power=args.power_decay
     )
