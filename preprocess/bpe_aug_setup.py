@@ -62,6 +62,7 @@ def build_features(data_type, out_file, aug_file, bpe):
 
     ques_limit = ques_idxs.shape[1]
 
+    unzip(aug_file)
     aug_examples = load_aug(aug_file)
 
     meta = {}
