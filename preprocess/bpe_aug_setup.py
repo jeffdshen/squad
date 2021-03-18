@@ -94,7 +94,7 @@ def build_features(data_type, out_file, aug_file, bpe):
             ques_text = aug_question_texts[i]
             skip = False
             for j in ques_map[ques_text]:
-                if context_idxs[j] == aug_context:
+                if np.array_equal(context_idxs[j], aug_context):
                     skip = True
                     break
             if skip:
