@@ -332,7 +332,7 @@ class QuestionsMLM(data.Dataset):
             dtype=torch.long,
         )
 
-        masked = torch.tensor([False] * size, dtype=torch.bool)
+        masked = torch.tensor([False] * x.size(0), dtype=torch.bool)
         masked[masks] = True
 
         x[masks[~unmask]] = self.mask_idx
