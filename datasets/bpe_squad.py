@@ -343,7 +343,7 @@ class QuestionsMLM(data.Dataset):
 
     def __getitem__(self, idx):
         idx = self.valid_idxs[idx]
-        x = torch.full((self.question_idxs.size(-1)), self.padding_idx, dtype=torch.long)
+        x = torch.full((self.question_idxs.size(-1),), self.padding_idx, dtype=torch.long)
         x[0] = self.cls_idx
         x[1:] = self.question_idxs[idx]
         x = x.clone().detach()
