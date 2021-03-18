@@ -54,7 +54,7 @@ def build_features(data_type, out_file, aug_file, bpe):
     total = ids.max()
     total_unfiltered = total
 
-    ques_map = defaultdict()
+    ques_map = defaultdict(list)
     for i, ques in enumerate(ques_idxs):
         ques = [token for token in ques.tolist() if token != 0]
         ques = bpe.decode(ques)
