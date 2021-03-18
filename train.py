@@ -12,6 +12,7 @@ from trainer import (
     electra_pretrainer,
     didae_pretrainer,
     roberta_finetune,
+    roberta_augment,
 )
 import util
 
@@ -39,6 +40,7 @@ def main():
     add_subparser("electra_pretrain", "bpe", subparsers, parent, electra_pretrainer)
     add_subparser("didae_pretrain", "bpe", subparsers, parent, didae_pretrainer)
     add_subparser("roberta_finetune", "bpe", subparsers, parent, roberta_finetune)
+    add_subparser("roberta_augment", "bpe", subparsers, parent, roberta_augment)
 
     args = parser.parse_args()
     if args.metric_name.startswith("NLL"):

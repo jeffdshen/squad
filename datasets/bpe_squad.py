@@ -117,7 +117,9 @@ class MLM(data.IterableDataset):
                     sample_length = (sample != self.padding_idx).sum().item()
                     sample_index = 0
                     while sample_index < sample_length:
-                        fill = min(sample_length - sample_index, next.size(0) - next_index)
+                        fill = min(
+                            sample_length - sample_index, next.size(0) - next_index
+                        )
                         next[next_index : next_index + fill] = sample[
                             sample_index : sample_index + fill
                         ]
@@ -261,3 +263,102 @@ class SQuAD(data.Dataset):
             return x, y, c_padding_mask, c_starts, ids
 
         return sliding_window_collate
+
+
+class QuestionsMLM(data.Dataset):
+    """
+    Args:
+        data_path (str): Path to .npz file containing pre-processed dataset.
+        max_tokens (int): Range of indices to generate for the random tokens.
+    """
+
+    def __init__(
+        self,
+        data_path,
+        max_tokens,
+        mask_prob=0.15,
+        unmask_prob=0.1,
+        randomize_prob=0.1,
+        ignore_idx=-1,
+        padding_idx=0,
+        cls_idx=1,
+        sep_idx=2,
+        mask_idx=3,
+        use_v2=True,
+    ):
+        super().__init__()
+
+        self.max_tokens = max_tokens
+        self.mask_prob = mask_prob
+        self.unmask_prob = unmask_prob
+        self.randomize_prob = randomize_prob
+        self.ignore_idx = ignore_idx
+        self.padding_idx = padding_idx
+        self.cls_idx = cls_idx
+        self.sep_idx = sep_idx
+        self.mask_idx = mask_idx
+        self.random_weights = [1] * self.max_tokens
+        self.random_weights[self.padding_idx] = 0
+        self.random_weights[self.cls_idx] = 0
+        self.random_weights[self.sep_idx] = 0
+        self.random_weights[self.mask_idx] = 0
+        # Don't need to do ignore_idx, since it should always be outside the range
+
+        dataset = np.load(data_path)
+        self.context_idxs = torch.from_numpy(dataset["context_idxs"]).long()
+        self.question_idxs = torch.from_numpy(dataset["ques_idxs"]).long()
+        self.y1s = torch.from_numpy(dataset["y1s"]).long()
+        self.y2s = torch.from_numpy(dataset["y2s"]).long()
+        self.ids = torch.from_numpy(dataset["ids"]).long()
+        self.valid_idxs = [
+            idx for idx in range(len(self.ids)) if use_v2 or self.y1s[idx].item() >= 0
+        ]
+        self.max_id = torch.max(self.ids) + 1
+
+    def mask(self, x, y):
+        size = x.size(0)
+        num_mask = int(self.mask_prob * size + random.random())
+        masks = torch.tensor(random.sample(range(size), num_mask), dtype=torch.long)
+        change_masks = torch.rand(num_mask)
+        unmask = change_masks < self.unmask_prob
+        random_mask = change_masks < (self.randomize_prob + self.unmask_prob)
+        random_mask = random_mask & (~unmask)
+        random_content = torch.tensor(
+            random.choices(
+                range(self.max_tokens),
+                weights=self.random_weights,
+                k=random_mask.sum().item(),
+            ),
+            dtype=torch.long,
+        )
+
+        masked = torch.tensor([False] * size, dtype=torch.bool)
+        masked[masks] = True
+
+        x[masks[~unmask]] = self.mask_idx
+        x[masks[random_mask]] = random_content
+        y[~masked] = self.ignore_idx
+
+        return x, y
+
+    def __getitem__(self, idx):
+        idx = self.valid_idxs[idx]
+        x = torch.full((self.question_idxs.size(-1)), self.padding_idx, dtype=torch.long)
+        x[0] = self.cls_idx
+        x[1:] = self.question_idxs[idx]
+        x = x.clone().detach()
+        y = x.clone().detach()
+        x, y = self.mask(x, y)
+
+        return x, y, self.context_idxs[idx], self.ids[idx]
+
+    def __len__(self):
+        return len(self.valid_idxs)
+
+    @staticmethod
+    def get_collate_fn():
+        def mlm_collate_fn(examples):
+            # Group by tensor type
+            x, y, c, ids = zip(*examples)
+            return torch.stack(x, dim=0), torch.stack(y, dim=0), torch.stack(c, dim=0), torch.stack(ids, dim=0)
+        return mlm_collate_fn
