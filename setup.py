@@ -13,7 +13,7 @@ Author:
 
 import argparse
 
-from preprocess import bidaf_setup, bpe_setup
+from preprocess import bidaf_setup, bpe_setup, bpe_aug_setup
 import util
 
 
@@ -34,6 +34,7 @@ def main():
 
     add_subparser("bidaf", "bidaf", subparsers, parent_parser, bidaf_setup)
     add_subparser("bpe", "bpe", subparsers, parent_parser, bpe_setup)
+    add_subparser("bpe_aug", "bpe", subparsers, parent_parser, bpe_aug_setup)
 
     args = parser.parse_args()
     args.data_dir = util.get_data_dir(args.data_dir, args.data_sub_dir)
