@@ -363,6 +363,12 @@ def add_train_args(parser):
         help="Number of epochs for which to train. Negative means forever.",
     )
     parser.add_argument(
+        "--metric_name",
+        type=str,
+        default="NLL",
+        help="Name of dev metric to determine best checkpoint.",
+    )
+    parser.add_argument(
         "--max_grad_norm",
         type=float,
         default=5.0,
