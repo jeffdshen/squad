@@ -155,18 +155,4 @@ def setup(args):
 
 
 def add_args(parser):
-    """Get arguments needed in setup.py."""
-    parser.add_argument(
-        "--max_tokens",
-        type=int,
-        default=50000,
-        help="Max size of BPE tokens vocab",
-    )
-    parser.add_argument(
-        "--include_test_examples",
-        type=lambda s: s.lower().startswith("t"),
-        default=True,
-        help="Process examples from the test set",
-    )
-
     return parser
