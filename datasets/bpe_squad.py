@@ -316,7 +316,7 @@ class QuestionsMLM(data.Dataset):
         self.max_id = torch.max(self.ids) + 1
 
     def mask(self, x, y):
-        size = x.size(0)
+        size = (x != self.padding_idx).sum().item()
         num_mask = int(self.mask_prob * size + random.random())
         masks = torch.tensor(random.sample(range(size), num_mask), dtype=torch.long)
         change_masks = torch.rand(num_mask)
