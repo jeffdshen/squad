@@ -59,10 +59,28 @@ python train.py didae_pretrain -n didae_pretrain --batch_size=16 --gradient_accu
 python train.py roberta_augment -n roberta_augment --batch_size=128 --gradient_accumulation=1 --n_layers=12 --num_epochs=1
  --lr=0.025 --power_decay=-0.5 --decay_forever=True --prenorm=true --sample_temperature=1.0 --data_sub_dir=bpe5k_aug --load_path=save/train/electra_pretrain-21/best.pth.tar
 
+## Augmentation x4
+python train.py roberta_augment -n roberta_augment --batch_size=128 --gradient_accumulation=1 --n_layers=12 --num_epochs=1 
+ --lr=0.025 --power_decay=-0.5 --decay_forever=True --prenorm=true --sample_temperature=1.1 --augment_samples=4 --data_sub_dir=bpe5k_aug4
+  --load_path=save/train/electra_pretrain-21/best.pth.tar
+
+## Augment bpe
+python setup.py bpe_aug --data_sub_dir=bpe5k_aug4
+
+## Finetune augmentation
+python train.py roberta_finetune -n electra_finetune_aug --batch_size=16 --gradient_accumulation=1 --n_layers=12 --num_epochs=100
+--lr=0.004 --warmup_steps=1300 --power_decay=-0.5 --decay_forever=True --prenorm=true --na_class_weight=0.4 --eval_per_n_samples=12500 --data_sub_dir=bpe5k_aug
+--load_path=save/train/electra_pretrain-21/best.pth.tar
+
+## Finetune augmentation x4
+python train.py roberta_finetune -n electra_finetune_aug --batch_size=16 --gradient_accumulation=1 --n_layers=12 --num_epochs=100
+--lr=0.004 --warmup_steps=1300 --power_decay=-0.5 --decay_forever=True --prenorm=true --na_class_weight=0.2 --eval_per_n_samples=12500 --data_sub_dir=bpe5k_aug4
+--load_path=save/train/electra_pretrain-21/best.pth.tar
+
+
 ## SCP
-scp -i /content/.ssh/azure.pem -r jdshen@13.90.27.193:~/squad/save/train/electra_pretrain-02/ ./electra_pretrain-02/
+scp -i /content/.ssh/azure.pem -r jdshen@XXX:~/squad/save/train/electra_pretrain-02/ ./electra_pretrain-02/
 scp -i /content/.ssh/azure.pem -r ./electra_pretrain-13/ jdshen@XXX:~/squad/save/train/electra_pretrain-13/
 
 scp -i /content/.ssh/azure.pem -r ./didae_pretrain-11/ jdshen@XXX:~/squad/save/train/didae_pretrain-11/
 scp -i /content/.ssh/azure.pem -r ./didae_finetune-01/ jdshen@XXX:~/squad/save/train/didae_finetune-11/
-
