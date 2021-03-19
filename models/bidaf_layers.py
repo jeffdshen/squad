@@ -49,7 +49,7 @@ class Embedding(nn.Module):
     def __init__(self, word_vectors, hidden_size, drop_prob, use_glove):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
-        if word_vectors is not None:
+        if use_glove:
             self.embed = nn.Embedding.from_pretrained(word_vectors)
         else:
             self.embed = nn.Embedding(word_vectors.size(0), word_vectors.size(1), 0)
