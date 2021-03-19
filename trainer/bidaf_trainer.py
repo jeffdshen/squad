@@ -54,6 +54,7 @@ def train(args):
         word_vectors=word_vectors,
         hidden_size=args.hidden_size,
         drop_prob=args.drop_prob,
+        use_glove=args.use_glove,
     )
     model = nn.DataParallel(model, args.gpu_ids)
     if args.load_path:
@@ -210,16 +211,8 @@ def evaluate(model, data_loader, device, eval_file, max_len, use_squad_v2):
 
     model.train()
 
-    results = eval.eval_dicts(gold_dict, pred_dict, use_squad_v2)
-    results_list = [
-        ("NLL", nll_meter.avg),
-        ("F1", results["F1"]),
-        ("EM", results["EM"]),
-    ]
-    if use_squad_v2:
-        results_list.append(("AvNA", results["AvNA"]))
-    results = OrderedDict(results_list)
-
+    results = {"NLL": nll_meter.avg}
+    results.update(eval.eval_dicts(gold_dict, pred_dict, use_squad_v2))
     return results, pred_dict
 
 
@@ -290,7 +283,11 @@ def test(args):
 
     # Get model
     log.info("Building model...")
-    model = BiDAF(word_vectors=word_vectors, hidden_size=args.hidden_size)
+    model = BiDAF(
+        word_vectors=word_vectors,
+        hidden_size=args.hidden_size,
+        use_glove=args.use_glove,
+    )
     model = nn.DataParallel(model, gpu_ids)
     log.info(f"Loading checkpoint from {args.load_path}...")
     model = util.load_model(model, args.load_path, gpu_ids, return_step=False)
@@ -352,15 +349,8 @@ def test(args):
 
     # Log results (except for test set, since it does not come with labels)
     if args.split != "test":
-        results = eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2)
-        results_list = [
-            ("NLL", nll_meter.avg),
-            ("F1", results["F1"]),
-            ("EM", results["EM"]),
-        ]
-        if args.use_squad_v2:
-            results_list.append(("AvNA", results["AvNA"]))
-        results = OrderedDict(results_list)
+        results = {"NLL": nll_meter.avg}
+        results.update(eval.eval_dicts(gold_dict, pred_dict, args.use_squad_v2))
 
         # Log to console
         results_str = ", ".join(f"{k}: {v:05.2f}" for k, v in results.items())
@@ -423,6 +413,12 @@ def add_train_test_args(parser):
         type=int,
         default=100,
         help="Number of features in encoder hidden layers.",
+    )
+    parser.add_argument(
+        "--use_glove",
+        type=lambda s: s.lower().startswith("t"),
+        default=True,
+        help="Whether to use pretrained glove vectors.",
     )
     parser.add_argument(
         "--num_visuals",

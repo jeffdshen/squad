@@ -46,10 +46,13 @@ class Embedding(nn.Module):
         drop_prob (float): Probability of zero-ing out activations
     """
 
-    def __init__(self, word_vectors, hidden_size, drop_prob):
+    def __init__(self, word_vectors, hidden_size, drop_prob, use_glove):
         super(Embedding, self).__init__()
         self.drop_prob = drop_prob
-        self.embed = nn.Embedding.from_pretrained(word_vectors)
+        if word_vectors is not None:
+            self.embed = nn.Embedding.from_pretrained(word_vectors)
+        else:
+            self.embed = nn.Embedding(word_vectors.size(0), word_vectors.size(1), 0)
         self.proj = nn.Linear(word_vectors.size(1), hidden_size, bias=False)
         self.hwy = HighwayEncoder(2, hidden_size)
 

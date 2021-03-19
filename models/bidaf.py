@@ -31,10 +31,13 @@ class BiDAF(nn.Module):
         drop_prob (float): Dropout probability.
     """
 
-    def __init__(self, word_vectors, hidden_size, drop_prob=0.0):
+    def __init__(self, word_vectors, hidden_size, drop_prob=0.0, use_glove=True):
         super(BiDAF, self).__init__()
         self.emb = layers.Embedding(
-            word_vectors=word_vectors, hidden_size=hidden_size, drop_prob=drop_prob
+            word_vectors=word_vectors,
+            hidden_size=hidden_size,
+            drop_prob=drop_prob,
+            use_glove=use_glove,
         )
 
         self.enc = layers.RNNEncoder(
