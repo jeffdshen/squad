@@ -6,13 +6,13 @@ This repository contains the code for the [Stanford CS224n: Natural Language Pro
 
 The project was submitted as a default final project (IID SQuAD track), which had some interesting [rules](https://web.stanford.edu/class/archive/cs/cs224n/cs224n.1214/project/default-final-project-handout-squad-track.pdf):
 1. Build a QA system for SQuAD 2.0.
-2. No pre-existing implementations allowed unless written yourself.
+2. **No pre-existing implementations allowed unless written yourself, i.e. everything must be written from scratch.**
 3. No pretrained contextual embeddings allowed (e.g. BERT, ELMO, GPT, etc.). GloVe was allowed.
 4. The official dev set is split into a new dev set and test set.
 5. The test set is hidden and used for leaderboards. No peeking at the official dev set!
 6. **No additional data sources whatsoever.** Only the training set, provided dev set, GloVe, and provided starter code allowed.
 
-This project ambitiously tried to see how well recent Transformer-based pretraining approaches fare in this ultra low-resource setting. Most other submissions likely used architectures or variations of architectures with stronger inductive biases like BiDAF, QANet, and so on.
+This project ambitiously tried to see how well recent Transformer-based pretraining approaches fare in this ultra low-resource setting. It contains RoBERTa/ELECTRA style approaches written from scratch. Most other submissions likely used architectures or variations of architectures with stronger inductive biases like BiDAF, QANet, and so on.
 
 Spoiler: BERT/RoBERTa/ELECTRA-style approaches have difficulty predicting more than the majority class. Even after tuning down the vocabulary size from 50k to 5k and using data augmentation, the model is not able to beat the provided BiDAF baseline. Better data-efficient pretraining approaches are needed!
 
