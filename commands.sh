@@ -21,6 +21,12 @@ python train.py electra_pretrain -n electra_pretrain --batch_size=16 --gradient_
 --n_layers=12 --num_epochs=1000 --lr=0.08 --warmup_steps=10000 --power_decay=-0.5 --decay_forever=True --prenorm=true
 --data_sub_dir=bpe5k
 
+# 18 layers
+python train.py electra_pretrain -n electra_pretrain --batch_size=16 --gradient_accumulation=1
+--n_layers=18 --dim=512 --n_heads=8 --ff_dim=2048 --mlm_samples=1 --lambda_weight=48
+--num_epochs=1000 --lr=0.08 --warmup_steps=10000 --power_decay=-0.5 --decay_forever=True --prenorm=true
+--data_sub_dir=bpe5k
+
 ## Finetune
 python train.py roberta_finetune -n electra_finetune --batch_size=12 --gradient_accumulation=1
 --n_layers=12 --num_epochs=100 --lr=0.004 --warmup_steps=1300 --power_decay=-0.5 --decay_forever=True --prenorm=true
@@ -84,3 +90,14 @@ scp -i /content/.ssh/azure.pem -r ./electra_pretrain-13/ jdshen@XXX:~/squad/save
 
 scp -i /content/.ssh/azure.pem -r ./didae_pretrain-11/ jdshen@XXX:~/squad/save/train/didae_pretrain-11/
 scp -i /content/.ssh/azure.pem -r ./didae_finetune-01/ jdshen@XXX:~/squad/save/train/didae_finetune-11/
+
+
+python train.py roberta_finetune -n electra_finetune_aug --batch_size=16 --gradient_accumulation=1
+ --n_layers=12 --num_epochs=100 --lr=0.004 --warmup_steps=1300 --power_decay=-0.5 --decay_forever=True --prenorm=true
+  --eval_per_n_samples=12500 --data_sub_dir=bpe5k --load_path=save/train/electra_finetune_aug-12/best.pth.tar
+
+python test.py roberta_finetune -n electra_finetune_aug --batch_size=16 --n_layers=12 --prenorm=true --data_sub_dir=bpe5k_aug
+--load_path=save/train/electra_finetune_aug-13/best.pth.tar
+
+
+python train.py roberta_pretrain -n roberta_pretrain --batch_size=16 --gradient_accumulation=1 --n_layers=12 --num_epochs=1000 --lr=0.04 --warmup_steps=10000 --power_decay=-0.5 --decay_forever=True --prenorm=true --data_sub_dir=bpe5k --mask_prob=0.25
